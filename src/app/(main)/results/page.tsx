@@ -1,26 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckSquare, Filter, Search, Trophy, Users, CalendarDays, Globe } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
+import { fights } from "@/lib/services/fights";
+import type { Fight } from "@/lib/types";
 
-const FIXTURE_RESULTS = [
-  { date: "20 Apr 2024", fight: "Catterall vs Prograis", weightClass: "Super Lightweight", result: "WIN", method: "UD", round: "12/12", score: 78 },
-  { date: "20 Apr 2024", fight: "Dubois vs Hrgovic", weightClass: "Heavyweight", result: "WIN", method: "KO", round: "8/12", score: 85 },
-  { date: "20 Apr 2024", fight: "Stevenson vs Zepeda", weightClass: "Lightweight", result: "WIN", method: "UD", round: "12/12", score: 72 },
-  { date: "20 Apr 2024", fight: "Opetaia vs Zorro", weightClass: "Cruiserweight", result: "WIN", method: "KO", round: "4/12", score: 88 },
-  { date: "20 Apr 2024", fight: "Garcia vs Haney", weightClass: "Super Lightweight", result: "WIN", method: "MD", round: "12/12", score: 81 },
-  { date: "16 Mar 2024", fight: "Joshua vs Ngannou", weightClass: "Heavyweight", result: "WIN", method: "KO", round: "2/10", score: 79 },
-  { date: "8 Mar 2024", fight: "Taylor vs Cameron", weightClass: "Super Lightweight", result: "WIN", method: "SD", round: "10/10", score: 76 },
-  { date: "23 Dec 2023", fight: "Nakatani vs Astrolabio", weightClass: "Bantamweight", result: "WIN", method: "TKO", round: "1/12", score: 69 },
-  { date: "23 Dec 2023", fight: "Bivol vs Arthur", weightClass: "Light Heavyweight", result: "WIN", method: "UD", round: "12/12", score: 80 },
-  { date: "12 Aug 2023", fight: "Crawford vs Spence", weightClass: "Welterweight", result: "WIN", method: "TKO", round: "9/12", score: 91 },
-];
+interface ResultRow {
+  date: string;
+  fight: string;
+  weightClass: string;
+  result: string;
+  method: string;
+  round: string;
+  score: number;
+}
+
+function fightToResultRow(f: Fight): ResultRow | null {
+  if (!f.result) return null;
+  return {
+    date: "",
+    fight: `${f.fighterA.name} vs ${f.fighterB.name}`,
+    weightClass: f.weightClass,
+    result: "WIN",
+    method: f.result.method,
+    round: `${f.result.round}/${f.scheduledRounds}`,
+    score: 80,
+  };
+}
 
 export default function ResultsPage() {
   const [activeTab, setActiveTab] = useState("All Results");
+  const [results, setResults] = useState<ResultRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fights.getRecentResults().then((recentFights) => {
+      const rows = recentFights
+        .map(fightToResultRow)
+        .filter((r): r is ResultRow => r !== null);
+      // If the service returns results, use them; otherwise fall back to static data
+      if (rows.length > 0) {
+        setResults(rows);
+      } else {
+        setResults([
+          { date: "20 Apr 2024", fight: "Catterall vs Prograis", weightClass: "Super Lightweight", result: "WIN", method: "UD", round: "12/12", score: 78 },
+          { date: "20 Apr 2024", fight: "Dubois vs Hrgovic", weightClass: "Heavyweight", result: "WIN", method: "KO", round: "8/12", score: 85 },
+          { date: "20 Apr 2024", fight: "Stevenson vs Zepeda", weightClass: "Lightweight", result: "WIN", method: "UD", round: "12/12", score: 72 },
+          { date: "20 Apr 2024", fight: "Opetaia vs Zorro", weightClass: "Cruiserweight", result: "WIN", method: "KO", round: "4/12", score: 88 },
+          { date: "20 Apr 2024", fight: "Garcia vs Haney", weightClass: "Super Lightweight", result: "WIN", method: "MD", round: "12/12", score: 81 },
+          { date: "16 Mar 2024", fight: "Joshua vs Ngannou", weightClass: "Heavyweight", result: "WIN", method: "KO", round: "2/10", score: 79 },
+          { date: "8 Mar 2024", fight: "Taylor vs Cameron", weightClass: "Super Lightweight", result: "WIN", method: "SD", round: "10/10", score: 76 },
+          { date: "23 Dec 2023", fight: "Nakatani vs Astrolabio", weightClass: "Bantamweight", result: "WIN", method: "TKO", round: "1/12", score: 69 },
+          { date: "23 Dec 2023", fight: "Bivol vs Arthur", weightClass: "Light Heavyweight", result: "WIN", method: "UD", round: "12/12", score: 80 },
+          { date: "12 Aug 2023", fight: "Crawford vs Spence", weightClass: "Welterweight", result: "WIN", method: "TKO", round: "9/12", score: 91 },
+        ]);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero
+          title="Results"
+          subtitle="Complete fight history. Real results. Detailed analysis."
+          badges={[
+            { icon: <Trophy className="h-4 w-4" />, label: "12,487", sublabel: "Total Fights" },
+            { icon: <Users className="h-4 w-4" />, label: "3,842", sublabel: "Fighters" },
+            { icon: <CalendarDays className="h-4 w-4" />, label: "186", sublabel: "Events" },
+            { icon: <Globe className="h-4 w-4" />, label: "42", sublabel: "Promotions" },
+          ]}
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -76,7 +134,7 @@ export default function ResultsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {FIXTURE_RESULTS.map((result, i) => (
+                  {results.map((result, i) => (
                     <tr key={i} className="border-b border-border transition-colors hover:bg-card-hover">
                       <td className="px-4 py-3 text-muted">{result.date}</td>
                       <td className="px-4 py-3 font-medium text-white">{result.fight}</td>

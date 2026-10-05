@@ -1,19 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bell, GitCompare, Trophy, Swords, TrendingUp, Award, Newspaper } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/shared/Card";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_FIGHTERS, FIXTURE_FIGHTS, FIXTURE_ODDS } from "@/lib/data/fixtures";
+import { fighters as fightersService } from "@/lib/services/fighters";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fighter } from "@/lib/types";
 
 export default function FighterProfilePage() {
   const params = useParams();
-  const fighter = FIXTURE_FIGHTERS.find((f) => f.id === params.id) ?? FIXTURE_FIGHTERS[0];
+  const [fighter, setFighter] = useState<Fighter | null>(null);
+  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+
+  useEffect(() => {
+    async function loadData() {
+      const fighterId = params.id as string;
+      const [fighterData, allFightersData] = await Promise.all([
+        fightersService.getById(fighterId),
+        fightersService.getAll(),
+      ]);
+
+      setAllFighters(allFightersData);
+
+      if (fighterData) {
+        setFighter(fighterData);
+      } else if (allFightersData.length > 0) {
+        setFighter(allFightersData[0]);
+      }
+
+      setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading || !fighter) {
+    return (
+      <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+    );
+  }
+
   const totalFights = fighter.wins + fighter.losses + fighter.draws;
   const koPercent = totalFights > 0 ? Math.round((fighter.kos / fighter.wins) * 100) : 0;
 
@@ -97,7 +128,7 @@ export default function FighterProfilePage() {
           <Card title="Next Fight" titleIcon={<Swords className="h-4 w-4" />}>
             <div className="rounded-md border border-border bg-surface p-4">
               <h4 className="text-sm font-bold text-white">
-                {fighter.name} vs {FIXTURE_FIGHTERS[1].name}
+                {fighter.name} vs {allFighters.length > 1 ? allFighters[1].name : "TBD"}
               </h4>
               <p className="mt-1 text-xs text-muted">{fighter.division}</p>
               <p className="mt-1 text-xs text-muted">Sat 21 Dec 2025 · Kingdom Arena, Riyadh</p>

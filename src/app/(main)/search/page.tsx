@@ -1,32 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search as SearchIcon, ChevronRight } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_FIGHTERS, FIXTURE_FIGHTS, FIXTURE_EVENTS, FIXTURE_PROMOTIONS } from "@/lib/data/fixtures";
+import { fighters as fightersService } from "@/lib/services/fighters";
+import { fights as fightsService } from "@/lib/services/fights";
+import { events as eventsService } from "@/lib/services/events";
+import { promotions as promotionsService } from "@/lib/services/promotions";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fighter, Fight, Event, Promotion } from "@/lib/types";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Results");
+  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
+  const [allFights, setAllFights] = useState<Fight[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [allPromotions, setAllPromotions] = useState<Promotion[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredFighters = FIXTURE_FIGHTERS.filter((f) =>
+  useEffect(() => {
+    Promise.all([
+      fightersService.getAll(),
+      fightsService.getAll(),
+      eventsService.getAll(),
+      promotionsService.getAll(),
+    ]).then(([fightersData, fightsData, eventsData, promotionsData]) => {
+      setAllFighters(fightersData);
+      setAllFights(fightsData);
+      setAllEvents(eventsData);
+      setAllPromotions(promotionsData);
+      setLoading(false);
+    });
+  }, []);
+
+  const filteredFighters = allFighters.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase())
   );
   const filteredFights = query
-    ? FIXTURE_FIGHTS.filter(
+    ? allFights.filter(
         (f) =>
           f.fighterA.name.toLowerCase().includes(query.toLowerCase()) ||
           f.fighterB.name.toLowerCase().includes(query.toLowerCase())
       )
     : [];
   const filteredEvents = query
-    ? FIXTURE_EVENTS.filter((e) => e.name.toLowerCase().includes(query.toLowerCase()))
+    ? allEvents.filter((e) => e.name.toLowerCase().includes(query.toLowerCase()))
     : [];
 
   const totalResults = filteredFighters.length + filteredFights.length + filteredEvents.length;
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero title="Search" subtitle="Find fighters, events, promotions and more." />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -172,7 +205,7 @@ export default function SearchPage() {
                     <h3 className="text-xs font-bold uppercase tracking-wider text-white">Promotions</h3>
                   </div>
                   <div className="flex flex-wrap gap-3">
-                    {FIXTURE_PROMOTIONS.map((promo) => (
+                    {allPromotions.map((promo) => (
                       <div key={promo.id} className="flex h-16 w-32 items-center justify-center rounded-md border border-border bg-card text-xs font-bold text-muted transition-colors hover:bg-card-hover hover:text-white">
                         {promo.name}
                       </div>

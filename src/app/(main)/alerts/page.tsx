@@ -1,16 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Calendar, TrendingUp, Newspaper, Zap, Settings, Plus } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
-import { FIXTURE_ALERTS } from "@/lib/data/fixtures";
+import { alerts as alertsService } from "@/lib/services/alerts";
 import { timeAgo } from "@/lib/utils";
+import type { Alert } from "@/lib/types";
 
 export default function AlertsPage() {
   const [activeTab, setActiveTab] = useState("Overview");
   const [alertType, setAlertType] = useState("Fight Alerts");
+  const [alertList, setAlertList] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    alertsService.getAll().then((data) => {
+      setAlertList(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero
+          title="Alerts Centre"
+          subtitle="Stay ahead. Never miss what matters. Get real-time alerts for fights, odds, news, and key Fight Pulse signals."
+          badges={[
+            { icon: <Bell className="h-4 w-4" />, label: "Real-Time Alerts", sublabel: "Be first to know" },
+            { icon: <TrendingUp className="h-4 w-4" />, label: "Personalised To You", sublabel: "Follow fighters, events and more" },
+            { icon: <Zap className="h-4 w-4" />, label: "More Than Odds", sublabel: "Get alerts for Fight Pulse signals, news and key moments" },
+          ]}
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -128,7 +155,7 @@ export default function AlertsPage() {
 
               <Card title="Recent Alerts" titleIcon={<Bell className="h-4 w-4" />} action={{ label: "View All" }}>
                 <div className="space-y-3">
-                  {FIXTURE_ALERTS.map((alert) => (
+                  {alertList.map((alert) => (
                     <div key={alert.id} className="flex items-center gap-3 rounded-md border border-border bg-surface p-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fp-red/20">
                         {alert.type === "odds" && <TrendingUp className="h-3 w-3 text-fp-red" />}

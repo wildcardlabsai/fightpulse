@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -17,33 +17,79 @@ import {
 } from "lucide-react";
 import Card from "@/components/shared/Card";
 import LiveBadge from "@/components/shared/LiveBadge";
-import StatBar from "@/components/shared/StatBar";
 import OddsDisplay from "@/components/shared/OddsDisplay";
-import {
-  FIXTURE_FIGHTS,
-  FIXTURE_EVENTS,
-  FIXTURE_FIGHTERS,
-  FIXTURE_MOMENTUM,
-  FIXTURE_ODDS,
-  FIXTURE_ALERTS,
-  FIXTURE_PROMOTIONS,
-} from "@/lib/data/fixtures";
+import { fights } from "@/lib/services/fights";
+import { events } from "@/lib/services/events";
+import { odds } from "@/lib/services/odds";
+import { live } from "@/lib/services/live";
+import { promotions } from "@/lib/services/promotions";
+import { fighters } from "@/lib/services/fighters";
+import type { Fight, Event, OddsSnapshot, MomentumSnapshot, Fighter, Promotion } from "@/lib/types";
 import { getCountryFlag } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const liveFight = FIXTURE_FIGHTS.find((f) => f.status === "LIVE");
-  const upcomingFights = FIXTURE_FIGHTS.filter((f) => f.status === "SCHEDULED");
-  const upcomingEvents = FIXTURE_EVENTS.filter((e) => e.status === "upcoming");
-  const latestMomentum = FIXTURE_MOMENTUM[FIXTURE_MOMENTUM.length - 1];
+  const [liveFights, setLiveFights] = useState<Fight[]>([]);
+  const [upcomingFights, setUpcomingFights] = useState<Fight[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [latestMomentum, setLatestMomentum] = useState<MomentumSnapshot | null>(null);
+  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
+  const [allPromotions, setAllPromotions] = useState<Promotion[]>([]);
+  const [liveFightOdds, setLiveFightOdds] = useState<OddsSnapshot[]>([]);
+  const [upcomingOdds, setUpcomingOdds] = useState<Map<string, OddsSnapshot[]>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [lf, uf, ue, af, ap] = await Promise.all([
+        fights.getLive(),
+        fights.getUpcoming(5),
+        events.getUpcoming(6),
+        fighters.getAll(),
+        promotions.getAll(),
+      ]);
+      setLiveFights(lf);
+      setUpcomingFights(uf);
+      setUpcomingEvents(ue);
+      setAllFighters(af);
+      setAllPromotions(ap);
+
+      if (lf.length > 0) {
+        const [m, o] = await Promise.all([
+          live.getMomentum(lf[0].id),
+          odds.getForFight(lf[0].id),
+        ]);
+        if (m.length > 0) setLatestMomentum(m[m.length - 1]);
+        setLiveFightOdds(o);
+      }
+
+      const oddsMap = new Map<string, OddsSnapshot[]>();
+      await Promise.all(
+        uf.map(async (f) => {
+          const o = await odds.getLatest(f.id);
+          oddsMap.set(f.id, o);
+        }),
+      );
+      setUpcomingOdds(oddsMap);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0">
-      {liveFight && (
-        <LiveFightHero fight={liveFight} momentum={latestMomentum} />
+      {liveFights.length > 0 && latestMomentum && (
+        <LiveFightHero fight={liveFights[0]} momentum={latestMomentum} odds={liveFightOdds} />
       )}
 
       <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:p-6">
-        {/* Left column */}
         <div className="space-y-4 lg:col-span-8">
           <UpcomingEventsSection events={upcomingEvents} />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -53,12 +99,11 @@ export default function DashboardPage() {
           <IntelligenceSection />
         </div>
 
-        {/* Right column */}
         <div className="space-y-4 lg:col-span-4">
-          <TodaysLiveFightsCard />
-          <UpcomingNextCard fights={upcomingFights} />
-          <FollowedFightersCard />
-          <PromotionsCard />
+          <TodaysLiveFightsCard liveFights={liveFights} liveOdds={liveFightOdds} />
+          <UpcomingNextCard fights={upcomingFights} oddsMap={upcomingOdds} />
+          <FollowedFightersCard fighters={allFighters} />
+          <PromotionsCard promotions={allPromotions} />
         </div>
       </div>
     </div>
@@ -68,13 +113,14 @@ export default function DashboardPage() {
 function LiveFightHero({
   fight,
   momentum,
+  odds: fightOdds,
 }: {
-  fight: (typeof FIXTURE_FIGHTS)[0];
-  momentum: (typeof FIXTURE_MOMENTUM)[0];
+  fight: Fight;
+  momentum: MomentumSnapshot;
+  odds: OddsSnapshot[];
 }) {
-  const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
-  const bestA = odds.length > 0 ? Math.min(...odds.map((o) => o.fighterAOdds)) : null;
-  const bestB = odds.length > 0 ? Math.max(...odds.map((o) => o.fighterBOdds)) : null;
+  const bestA = fightOdds.length > 0 ? Math.min(...fightOdds.map((o) => o.fighterAOdds)) : null;
+  const bestB = fightOdds.length > 0 ? Math.max(...fightOdds.map((o) => o.fighterBOdds)) : null;
 
   return (
     <div className="relative overflow-hidden border-b border-border bg-gradient-to-r from-card via-surface to-card">
@@ -90,7 +136,6 @@ function LiveFightHero({
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          {/* Fighter A */}
           <div className="flex items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-border bg-card text-2xl font-bold text-muted lg:h-28 lg:w-28">
               {fight.fighterA.name.split(" ").map(n => n[0]).join("")}
@@ -106,7 +151,6 @@ function LiveFightHero({
             </div>
           </div>
 
-          {/* Center - Momentum */}
           <div className="hidden flex-col items-center gap-2 md:flex">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Fight Pulse Momentum</p>
             <div className="flex items-center gap-6">
@@ -134,7 +178,6 @@ function LiveFightHero({
             </div>
           </div>
 
-          {/* Fighter B */}
           <div className="flex flex-row-reverse items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-border bg-card text-2xl font-bold text-muted lg:h-28 lg:w-28">
               {fight.fighterB.name.split(" ").map(n => n[0]).join("")}
@@ -155,11 +198,11 @@ function LiveFightHero({
   );
 }
 
-function UpcomingEventsSection({ events }: { events: typeof FIXTURE_EVENTS }) {
+function UpcomingEventsSection({ events: eventList }: { events: Event[] }) {
   return (
     <Card title="Upcoming Major Events" titleIcon={<Calendar className="h-4 w-4" />} action={{ label: "View All Events" }}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
+        {eventList.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.id}`}
@@ -249,74 +292,97 @@ function LatestResultsSection() {
   );
 }
 
-function TodaysLiveFightsCard() {
+function TodaysLiveFightsCard({ liveFights, liveOdds }: { liveFights: Fight[]; liveOdds: OddsSnapshot[] }) {
+  if (liveFights.length === 0) {
+    return (
+      <Card title="Today's Live Fights" titleIcon={<Radio className="h-4 w-4" />}>
+        <p className="py-4 text-center text-xs text-muted">No live fights right now</p>
+      </Card>
+    );
+  }
+
   return (
     <Card title="Today's Live Fights" titleIcon={<Radio className="h-4 w-4" />} liveBadge action={{ label: "View All" }}>
       <div className="space-y-3">
-        <div className="rounded-md border border-fp-red/30 bg-fp-red/5 p-3">
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="rounded bg-fp-red px-1 py-0.5 font-bold text-white">R6</span>
-            <span className="font-mono text-fp-red">2:15</span>
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-white">Shakur Stevenson</p>
-              <p className="text-[10px] text-muted">vs Harutyunyan</p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-bold text-white">1.22</span>
-              <span className="mx-2 text-muted">·</span>
-              <span className="text-xs font-bold text-white">4.20</span>
-            </div>
-          </div>
-          <p className="mt-1 text-[10px] text-muted">WBC Lightweight</p>
-        </div>
+        {liveFights.map((fight) => {
+          const fightOdds = liveOdds.filter((o) => o.fightId === fight.id);
+          return (
+            <Link key={fight.id} href={`/live/${fight.id}`} className="block rounded-md border border-fp-red/30 bg-fp-red/5 p-3">
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="rounded bg-fp-red px-1 py-0.5 font-bold text-white">R{fight.currentRound}</span>
+                <span className="font-mono text-fp-red">2:15</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-white">{fight.fighterA.name}</p>
+                  <p className="text-[10px] text-muted">vs {fight.fighterB.name}</p>
+                </div>
+                {fightOdds.length > 0 && (
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
+                    <span className="mx-2 text-muted">·</span>
+                    <span className="text-xs font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+              {fight.title && <p className="mt-1 text-[10px] text-muted">{fight.title}</p>}
+            </Link>
+          );
+        })}
       </div>
     </Card>
   );
 }
 
-function UpcomingNextCard({ fights }: { fights: typeof FIXTURE_FIGHTS }) {
+function UpcomingNextCard({ fights: fightList, oddsMap }: { fights: Fight[]; oddsMap: Map<string, OddsSnapshot[]> }) {
   return (
     <Card title="Upcoming Next" titleIcon={<Clock className="h-4 w-4" />} action={{ label: "View All" }}>
       <div className="space-y-3">
-        {fights.slice(0, 3).map((fight) => (
-          <Link
-            key={fight.id}
-            href={`/fights/${fight.id}`}
-            className="flex items-center justify-between rounded-md border border-border bg-surface p-3 transition-colors hover:bg-card-hover"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-card text-[10px] font-bold text-muted">
-                {fight.fighterA.name.split(" ").map(n => n[0]).join("")}
+        {fightList.slice(0, 3).map((fight) => {
+          const fightOdds = oddsMap.get(fight.id) ?? [];
+          return (
+            <Link
+              key={fight.id}
+              href={`/fights/${fight.id}`}
+              className="flex items-center justify-between rounded-md border border-border bg-surface p-3 transition-colors hover:bg-card-hover"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-card text-[10px] font-bold text-muted">
+                  {fight.fighterA.name.split(" ").map(n => n[0]).join("")}
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-white">
+                    {fight.fighterA.name.split(" ").pop()} vs {fight.fighterB.name.split(" ").pop()}
+                  </p>
+                  <p className="text-[10px] text-muted">{fight.weightClass}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-medium text-white">
-                  {fight.fighterA.name.split(" ").pop()} vs {fight.fighterB.name.split(" ").pop()}
-                </p>
-                <p className="text-[10px] text-muted">{fight.weightClass}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1">
-                {FIXTURE_ODDS.filter(o => o.fightId === fight.id).slice(0, 1).map(o => (
-                  <span key={o.id} className="text-[10px] text-muted">
-                    <span className="font-bold text-white">{o.fighterAOdds.toFixed(2)}</span>
+              {fightOdds.length > 0 && (
+                <div className="text-right">
+                  <span className="text-[10px] text-muted">
+                    <span className="font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
                     <span className="mx-1">·</span>
-                    <span className="font-bold text-white">{o.fighterBOdds.toFixed(2)}</span>
+                    <span className="font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
                   </span>
-                ))}
-              </div>
-            </div>
-          </Link>
-        ))}
+                </div>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </Card>
   );
 }
 
-function FollowedFightersCard() {
-  const followed = FIXTURE_FIGHTERS.slice(0, 4);
+function FollowedFightersCard({ fighters: fighterList }: { fighters: Fighter[] }) {
+  const followed = fighterList.slice(0, 4);
+  if (followed.length === 0) {
+    return (
+      <Card title="Followed Fighters" titleIcon={<Star className="h-4 w-4" />}>
+        <p className="py-4 text-center text-xs text-muted">No followed fighters yet</p>
+      </Card>
+    );
+  }
   return (
     <Card title="Followed Fighters" titleIcon={<Star className="h-4 w-4" />} action={{ label: "Manage" }}>
       <div className="grid grid-cols-4 gap-2">
@@ -342,11 +408,11 @@ function FollowedFightersCard() {
   );
 }
 
-function PromotionsCard() {
+function PromotionsCard({ promotions: promoList }: { promotions: Promotion[] }) {
   return (
     <Card title="Promotions" titleIcon={<Tv className="h-4 w-4" />} action={{ label: "View All" }}>
       <div className="grid grid-cols-3 gap-2">
-        {FIXTURE_PROMOTIONS.slice(0, 6).map((promo) => (
+        {promoList.slice(0, 6).map((promo) => (
           <div
             key={promo.id}
             className="flex h-12 items-center justify-center rounded-md border border-border bg-surface text-[10px] font-bold text-muted transition-colors hover:bg-card-hover hover:text-white"

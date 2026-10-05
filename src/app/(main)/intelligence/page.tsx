@@ -1,18 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Brain, TrendingUp, Zap, BarChart3, Target, Activity } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
 import LiveBadge from "@/components/shared/LiveBadge";
 import StatBar from "@/components/shared/StatBar";
-import { FIXTURE_MOMENTUM, FIXTURE_ROUND_STATS, FIXTURE_SIGNALS, FIXTURE_FIGHTS } from "@/lib/data/fixtures";
+import { fights as fightsService } from "@/lib/services/fights";
+import { live } from "@/lib/services/live";
+import type { Fight, MomentumSnapshot, RoundStats, FightSignal } from "@/lib/types";
 
 export default function IntelligencePage() {
   const [activeTab, setActiveTab] = useState("Overview");
-  const fight = FIXTURE_FIGHTS[0];
-  const latestMomentum = FIXTURE_MOMENTUM[FIXTURE_MOMENTUM.length - 1];
+  const [fight, setFight] = useState<Fight | null>(null);
+  const [momentum, setMomentum] = useState<MomentumSnapshot[]>([]);
+  const [roundStats, setRoundStats] = useState<RoundStats[]>([]);
+  const [signals, setSignals] = useState<FightSignal[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fightsService.getAll().then(async (allFights) => {
+      const firstFight = allFights[0];
+      if (!firstFight) {
+        setLoading(false);
+        return;
+      }
+      setFight(firstFight);
+
+      const [momentumData, roundStatsData, signalsData] = await Promise.all([
+        live.getMomentum(firstFight.id),
+        live.getRoundStats(firstFight.id),
+        live.getSignals(firstFight.id),
+      ]);
+
+      setMomentum(momentumData);
+      setRoundStats(roundStatsData);
+      setSignals(signalsData);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading || !fight) {
+    return (
+      <div>
+        <PageHero
+          title="Intelligence Centre"
+          subtitle="Real data. Deeper insights. Smarter decisions."
+          badges={[
+            { icon: <Activity className="h-4 w-4" />, label: "Fight Pulse Momentum", sublabel: "Live and historical momentum analysis" },
+            { icon: <BarChart3 className="h-4 w-4" />, label: "Data Driven Insights", sublabel: "Key trends, patterns and performance data" },
+            { icon: <Brain className="h-4 w-4" />, label: "Explained Analysis", sublabel: "Understand why momentum changes" },
+          ]}
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
+
+  const latestMomentum = momentum[momentum.length - 1];
 
   return (
     <div>
@@ -44,13 +90,13 @@ export default function IntelligencePage() {
                 <div className="text-center">
                   <p className="text-xs text-muted">{fight.fighterA.name.split(" ").pop()}</p>
                   <div className="mt-1 flex h-16 w-16 items-center justify-center rounded-lg bg-fp-red/20">
-                    <span className="text-2xl font-black text-fp-red">{latestMomentum.fighterAMomentum}</span>
+                    <span className="text-2xl font-black text-fp-red">{latestMomentum?.fighterAMomentum}</span>
                   </div>
                   <p className="mt-1 text-[9px] text-muted">Momentum Score</p>
                 </div>
                 <div className="flex-1 px-4">
                   <div className="flex h-32 items-end justify-between gap-1">
-                    {FIXTURE_MOMENTUM.map((m, i) => (
+                    {momentum.map((m, i) => (
                       <div key={i} className="flex flex-1 flex-col items-center gap-1">
                         <div className="w-full rounded-t bg-fp-red/60" style={{ height: `${m.fighterAMomentum * 0.8}%` }} />
                         <div className="w-full rounded-b bg-fp-blue/60" style={{ height: `${m.fighterBMomentum * 0.8}%` }} />
@@ -62,7 +108,7 @@ export default function IntelligencePage() {
                 <div className="text-center">
                   <p className="text-xs text-muted">{fight.fighterB.name.split(" ").pop()}</p>
                   <div className="mt-1 flex h-16 w-16 items-center justify-center rounded-lg bg-fp-blue/20">
-                    <span className="text-2xl font-black text-fp-blue">{latestMomentum.fighterBMomentum}</span>
+                    <span className="text-2xl font-black text-fp-blue">{latestMomentum?.fighterBMomentum}</span>
                   </div>
                   <p className="mt-1 text-[9px] text-muted">Momentum Score</p>
                 </div>
@@ -116,7 +162,7 @@ export default function IntelligencePage() {
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="Round by Round Momentum" titleIcon={<BarChart3 className="h-4 w-4" />}>
             <div className="flex h-40 items-end justify-between gap-2">
-              {FIXTURE_MOMENTUM.map((m, i) => (
+              {momentum.map((m, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center">
                   <div className="mb-1 w-full space-y-0.5">
                     <div className="w-full rounded-sm bg-fp-red/60" style={{ height: `${m.fighterAMomentum * 1.2}px` }} />
@@ -129,7 +175,7 @@ export default function IntelligencePage() {
           </Card>
 
           <Card title="Round Statistics" titleIcon={<BarChart3 className="h-4 w-4" />}>
-            {FIXTURE_ROUND_STATS.slice(-1).map((r) => (
+            {roundStats.slice(-1).map((r) => (
               <div key={r.round} className="overflow-hidden rounded-md border border-border">
                 <table className="w-full text-xs">
                   <thead>
@@ -207,7 +253,7 @@ export default function IntelligencePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {FIXTURE_SIGNALS.map((signal, i) => (
+                  {signals.map((signal, i) => (
                     <tr key={i} className="border-b border-border hover:bg-card-hover">
                       <td className="px-4 py-2.5 font-medium text-white">{signal.name}</td>
                       <td className="px-4 py-2.5 text-center">

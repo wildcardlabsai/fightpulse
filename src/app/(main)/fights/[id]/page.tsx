@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Swords, BarChart3, TrendingUp, Clock, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -8,15 +8,51 @@ import Card from "@/components/shared/Card";
 import TabBar from "@/components/shared/TabBar";
 import StatBar from "@/components/shared/StatBar";
 import OddsDisplay from "@/components/shared/OddsDisplay";
-import { FIXTURE_FIGHTS, FIXTURE_ODDS, FIXTURE_EVENTS, FIXTURE_BOOKMAKERS } from "@/lib/data/fixtures";
+import { fights } from "@/lib/services/fights";
+import { odds as oddsService } from "@/lib/services/odds";
+import { events } from "@/lib/services/events";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fight, OddsSnapshot, Event } from "@/lib/types";
 
 export default function FightDetailPage() {
   const params = useParams();
-  const fight = FIXTURE_FIGHTS.find((f) => f.id === params.id) ?? FIXTURE_FIGHTS[1];
-  const event = FIXTURE_EVENTS.find((e) => e.id === fight.eventId);
-  const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+  const [fight, setFight] = useState<Fight | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [odds, setOdds] = useState<OddsSnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+
+  useEffect(() => {
+    async function loadData() {
+      const fightId = params.id as string;
+      let fightData = await fights.getById(fightId);
+
+      if (!fightData) {
+        // Fallback: get second fight from all fights
+        const allFights = await fights.getAll();
+        fightData = allFights[1] ?? allFights[0] ?? null;
+      }
+
+      if (fightData) {
+        setFight(fightData);
+        const [oddsData, eventData] = await Promise.all([
+          oddsService.getForFight(fightData.id),
+          fightData.eventId ? events.getById(fightData.eventId) : Promise.resolve(null),
+        ]);
+        setOdds(oddsData);
+        setEvent(eventData);
+      }
+
+      setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading || !fight) {
+    return (
+      <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+    );
+  }
 
   return (
     <div>

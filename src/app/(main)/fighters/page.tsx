@@ -1,19 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, Search, Filter } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_FIGHTERS } from "@/lib/data/fixtures";
+import { fighters as fightersService } from "@/lib/services/fighters";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fighter } from "@/lib/types";
 
 export default function FightersPage() {
   const [activeTab, setActiveTab] = useState("All Fighters");
   const [search, setSearch] = useState("");
-  const fighters = FIXTURE_FIGHTERS.filter(
+  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const data = await fightersService.getAll();
+      setAllFighters(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const fighters = allFighters.filter(
     (f) => f.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero
+          title="Fighters"
+          subtitle="Complete fighter database with records, stats and intelligence."
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -21,7 +46,7 @@ export default function FightersPage() {
         title="Fighters"
         subtitle="Complete fighter database with records, stats and intelligence."
         badges={[
-          { icon: <Users className="h-4 w-4" />, label: `${FIXTURE_FIGHTERS.length}`, sublabel: "Fighters" },
+          { icon: <Users className="h-4 w-4" />, label: `${allFighters.length}`, sublabel: "Fighters" },
         ]}
       />
 

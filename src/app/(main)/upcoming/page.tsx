@@ -1,16 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Calendar, Clock, MapPin } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_FIGHTS, FIXTURE_EVENTS, FIXTURE_ODDS } from "@/lib/data/fixtures";
+import { fights as fightsService } from "@/lib/services/fights";
+import { events as eventsService } from "@/lib/services/events";
+import { odds as oddsService } from "@/lib/services/odds";
 import { getCountryFlag } from "@/lib/utils";
+import type { Fight, Event, OddsSnapshot } from "@/lib/types";
 
 export default function UpcomingPage() {
   const [activeTab, setActiveTab] = useState("All Upcoming");
-  const upcomingFights = FIXTURE_FIGHTS.filter((f) => f.status === "SCHEDULED");
+  const [upcomingFights, setUpcomingFights] = useState<Fight[]>([]);
+  const [eventMap, setEventMap] = useState<Record<string, Event>>({});
+  const [oddsMap, setOddsMap] = useState<Record<string, OddsSnapshot[]>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fightsService.getUpcoming().then(async (fightsData) => {
+      setUpcomingFights(fightsData);
+
+      // Load events and odds for each fight
+      const eventsResult: Record<string, Event> = {};
+      const oddsResult: Record<string, OddsSnapshot[]> = {};
+
+      await Promise.all(fightsData.map(async (fight) => {
+        const [eventData, oddsData] = await Promise.all([
+          fight.eventId ? eventsService.getById(fight.eventId) : Promise.resolve(null),
+          oddsService.getForFight(fight.id),
+        ]);
+        if (eventData) eventsResult[fight.eventId] = eventData;
+        oddsResult[fight.id] = oddsData;
+      }));
+
+      setEventMap(eventsResult);
+      setOddsMap(oddsResult);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero title="Upcoming" subtitle="All confirmed upcoming boxing fights and events." />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -25,8 +63,8 @@ export default function UpcomingPage() {
 
         <div className="mt-6 space-y-3">
           {upcomingFights.map((fight) => {
-            const event = FIXTURE_EVENTS.find((e) => e.id === fight.eventId);
-            const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+            const event = eventMap[fight.eventId];
+            const fightOdds = oddsMap[fight.id] ?? [];
 
             return (
               <Link
@@ -55,11 +93,11 @@ export default function UpcomingPage() {
                   </div>
 
                   <div className="hidden flex-col items-center gap-1 md:flex">
-                    {odds.length > 0 && (
+                    {fightOdds.length > 0 && (
                       <div className="flex gap-3">
-                        <span className="text-sm font-bold text-white">{odds[0].fighterAOdds.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
                         <span className="text-xs text-muted">vs</span>
-                        <span className="text-sm font-bold text-white">{odds[0].fighterBOdds.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
                       </div>
                     )}
                     {event && (

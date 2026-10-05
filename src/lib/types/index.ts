@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+// Fight Pulse — Canonical Data Model
+// ---------------------------------------------------------------------------
+
+// ---- Enums / union types --------------------------------------------------
+
 export type FightStatus =
   | "SCHEDULED"
   | "ANNOUNCED"
@@ -43,6 +49,42 @@ export type WeightClass =
 
 export type Stance = "Orthodox" | "Southpaw" | "Switch";
 
+export type VerificationStatus = "verified" | "unverified" | "pending";
+
+export type OddsMarket =
+  | "moneyline"
+  | "over_under_rounds"
+  | "method_of_victory"
+  | "round_betting"
+  | "prop";
+
+// ---- Source tracking -------------------------------------------------------
+
+export interface DataSource {
+  id: string;
+  provider: string;
+  providerId: string;
+  source: string;
+  retrievedAt: string;
+  updatedAt: string;
+  verificationStatus: VerificationStatus;
+}
+
+export interface DataFreshness {
+  status: "live" | "delayed" | "stale" | "unavailable";
+  lastUpdatedAt?: string;
+  delaySeconds?: number;
+}
+
+export interface FightStatusTransition {
+  from: FightStatus;
+  to: FightStatus;
+  timestamp: string;
+  source?: string;
+}
+
+// ---- Core entities ---------------------------------------------------------
+
 export interface Fighter {
   id: string;
   name: string;
@@ -61,6 +103,13 @@ export interface Fighter {
   kos: number;
   imageUrl?: string;
   status: "active" | "retired" | "inactive";
+  // extended fields
+  providerId?: string;
+  source?: DataSource;
+  aliases?: string[];
+  verificationStatus?: VerificationStatus;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Promotion {
@@ -68,6 +117,9 @@ export interface Promotion {
   name: string;
   logoUrl?: string;
   website?: string;
+  // extended fields
+  country?: string;
+  foundedYear?: number;
 }
 
 export interface Venue {
@@ -87,6 +139,11 @@ export interface Event {
   status: "upcoming" | "live" | "completed" | "cancelled" | "postponed";
   imageUrl?: string;
   fights: Fight[];
+  // extended fields
+  source?: DataSource;
+  totalFights?: number;
+  mainCardFights?: number;
+  underCardFights?: number;
 }
 
 export interface Fight {
@@ -103,6 +160,14 @@ export interface Fight {
   isMainEvent?: boolean;
   isCoMain?: boolean;
   orderOnCard?: number;
+  // extended fields
+  source?: DataSource;
+}
+
+export interface ScoreCard {
+  judge: string;
+  fighterAScore: number;
+  fighterBScore: number;
 }
 
 export interface FightResult {
@@ -110,13 +175,11 @@ export interface FightResult {
   method: ResultMethod;
   round: number;
   time?: string;
+  // extended fields
+  officialScoreCards?: ScoreCard[];
 }
 
-export interface RoundStats {
-  round: number;
-  fighterAStats: PunchStats;
-  fighterBStats: PunchStats;
-}
+// ---- Stats -----------------------------------------------------------------
 
 export interface PunchStats {
   totalPunchesThrown: number;
@@ -128,6 +191,20 @@ export interface PunchStats {
   knockdowns: number;
 }
 
+export interface RoundStats {
+  round: number;
+  fighterAStats: PunchStats;
+  fighterBStats: PunchStats;
+}
+
+// ---- Odds ------------------------------------------------------------------
+
+export interface Bookmaker {
+  id: string;
+  name: string;
+  logoUrl?: string;
+}
+
 export interface OddsSnapshot {
   id: string;
   fightId: string;
@@ -136,12 +213,20 @@ export interface OddsSnapshot {
   fighterBOdds: number;
   drawOdds?: number;
   timestamp: string;
+  // extended fields
+  market?: OddsMarket;
+  source?: DataSource;
 }
 
-export interface Bookmaker {
-  id: string;
-  name: string;
-  logoUrl?: string;
+// ---- Momentum --------------------------------------------------------------
+
+export interface MomentumComponents {
+  punchOutput: number;
+  accuracy: number;
+  powerPunches: number;
+  defence: number;
+  ringControl: number;
+  recentRounds: number;
 }
 
 export interface MomentumSnapshot {
@@ -150,7 +235,12 @@ export interface MomentumSnapshot {
   timestamp: string;
   fighterAMomentum: number;
   fighterBMomentum: number;
+  // extended fields
+  source?: DataSource;
+  components?: MomentumComponents;
 }
+
+// ---- Alerts & feed ---------------------------------------------------------
 
 export interface Alert {
   id: string;
@@ -171,10 +261,32 @@ export interface LiveFeedEntry {
   round?: number;
 }
 
+// ---- Signals ---------------------------------------------------------------
+
 export interface FightSignal {
   name: string;
   status: string;
   fighter?: string;
   confidence: "High" | "Medium" | "Low";
   lastUpdated: string;
+  // extended fields
+  id?: string;
+  fightId?: string;
+  timestamp?: string;
+  source?: DataSource;
+}
+
+// ---- News ------------------------------------------------------------------
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  content?: string;
+  summary?: string;
+  source: string;
+  url?: string;
+  publishedAt: string;
+  fighterIds?: string[];
+  fightIds?: string[];
+  eventIds?: string[];
 }

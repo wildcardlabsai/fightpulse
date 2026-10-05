@@ -1,18 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Radio } from "lucide-react";
 import Card from "@/components/shared/Card";
 import LiveBadge from "@/components/shared/LiveBadge";
 import TabBar from "@/components/shared/TabBar";
 import PageHero from "@/components/shared/PageHero";
-import { FIXTURE_FIGHTS, FIXTURE_MOMENTUM, FIXTURE_ODDS } from "@/lib/data/fixtures";
+import { fights } from "@/lib/services/fights";
+import { odds as oddsService } from "@/lib/services/odds";
+import { live } from "@/lib/services/live";
 import { getCountryFlag } from "@/lib/utils";
+import type { Fight, OddsSnapshot, MomentumSnapshot } from "@/lib/types";
 
 export default function LivePage() {
-  const liveFights = FIXTURE_FIGHTS.filter((f) => f.status === "LIVE");
+  const [liveFights, setLiveFights] = useState<Fight[]>([]);
+  const [momentumMap, setMomentumMap] = useState<Record<string, MomentumSnapshot[]>>({});
+  const [oddsMap, setOddsMap] = useState<Record<string, OddsSnapshot[]>>({});
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Live Fights");
+
+  useEffect(() => {
+    async function loadData() {
+      const liveFightsData = await fights.getLive();
+      setLiveFights(liveFightsData);
+
+      const [momentumResults, oddsResults] = await Promise.all([
+        Promise.all(liveFightsData.map(async (f) => ({ id: f.id, data: await live.getMomentum(f.id) }))),
+        Promise.all(liveFightsData.map(async (f) => ({ id: f.id, data: await oddsService.getForFight(f.id) }))),
+      ]);
+
+      const mMap: Record<string, MomentumSnapshot[]> = {};
+      for (const m of momentumResults) mMap[m.id] = m.data;
+      setMomentumMap(mMap);
+
+      const oMap: Record<string, OddsSnapshot[]> = {};
+      for (const o of oddsResults) oMap[o.id] = o.data;
+      setOddsMap(oMap);
+
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero title="Live" subtitle="Real-time fight coverage as it happens." />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -29,9 +67,9 @@ export default function LivePage() {
           {liveFights.length > 0 ? (
             <div className="space-y-4">
               {liveFights.map((fight) => {
-                const momentum = FIXTURE_MOMENTUM.filter(m => m.fightId === fight.id);
+                const momentum = momentumMap[fight.id] ?? [];
                 const latest = momentum[momentum.length - 1];
-                const odds = FIXTURE_ODDS.filter(o => o.fightId === fight.id);
+                const fightOdds = oddsMap[fight.id] ?? [];
 
                 return (
                   <Link
@@ -84,14 +122,14 @@ export default function LivePage() {
                         </div>
                       </div>
 
-                      {odds.length > 0 && (
+                      {fightOdds.length > 0 && (
                         <div className="mt-4 flex justify-center gap-4">
                           <div className="rounded border border-border bg-surface px-4 py-2 text-center">
-                            <span className="text-lg font-bold text-white">{odds[0].fighterAOdds.toFixed(2)}</span>
+                            <span className="text-lg font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
                             <p className="text-[10px] text-muted">Favourite</p>
                           </div>
                           <div className="rounded border border-border bg-surface px-4 py-2 text-center">
-                            <span className="text-lg font-bold text-white">{odds[0].fighterBOdds.toFixed(2)}</span>
+                            <span className="text-lg font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
                             <p className="text-[10px] text-muted">Underdog</p>
                           </div>
                         </div>
