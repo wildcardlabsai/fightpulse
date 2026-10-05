@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, MapPin, Tv, Clock, Share2 } from "lucide-react";
 import Card from "@/components/shared/Card";
@@ -150,6 +150,14 @@ export default function EventDetailPage() {
                         </div>
                       </div>
                     </div>
+
+                    {fightOdds.length > 0 && (
+                      <div className="mt-2 flex items-center justify-center gap-3 md:hidden">
+                        <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
+                        <span className="text-[10px] text-muted">vs</span>
+                        <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -194,23 +202,7 @@ export default function EventDetailPage() {
             </div>
           </Card>
 
-          <Card title="Event Countdown" titleIcon={<Clock className="h-4 w-4" />}>
-            <div className="flex justify-center gap-3">
-              {[
-                { value: "12", label: "DAYS" },
-                { value: "06", label: "HOURS" },
-                { value: "24", label: "MINS" },
-                { value: "18", label: "SECS" },
-              ].map((unit) => (
-                <div key={unit.label} className="flex flex-col items-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-md border border-border bg-surface">
-                    <span className="text-xl font-black text-white">{unit.value}</span>
-                  </div>
-                  <span className="mt-1 text-[9px] font-bold text-muted">{unit.label}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <EventCountdown eventDate={event.date} />
 
           <button className="w-full rounded-md bg-fp-red px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-fp-red-dark">
             Get Tickets →
@@ -218,5 +210,55 @@ export default function EventDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function EventCountdown({ eventDate }: { eventDate: string }) {
+  const getTimeLeft = useCallback(() => {
+    const diff = new Date(eventDate).getTime() - Date.now();
+    if (diff <= 0) return null;
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      mins: Math.floor((diff / (1000 * 60)) % 60),
+      secs: Math.floor((diff / 1000) % 60),
+    };
+  }, [eventDate]);
+
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    return () => clearInterval(interval);
+  }, [getTimeLeft]);
+
+  if (!timeLeft) {
+    return (
+      <Card title="Event Status" titleIcon={<Clock className="h-4 w-4" />}>
+        <p className="py-4 text-center text-xs font-bold text-fp-red">EVENT STARTED</p>
+      </Card>
+    );
+  }
+
+  const units = [
+    { value: String(timeLeft.days).padStart(2, "0"), label: "DAYS" },
+    { value: String(timeLeft.hours).padStart(2, "0"), label: "HOURS" },
+    { value: String(timeLeft.mins).padStart(2, "0"), label: "MINS" },
+    { value: String(timeLeft.secs).padStart(2, "0"), label: "SECS" },
+  ];
+
+  return (
+    <Card title="Event Countdown" titleIcon={<Clock className="h-4 w-4" />}>
+      <div className="flex justify-center gap-3">
+        {units.map((unit) => (
+          <div key={unit.label} className="flex flex-col items-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-md border border-border bg-surface">
+              <span className="text-xl font-black tabular-nums text-white">{unit.value}</span>
+            </div>
+            <span className="mt-1 text-[9px] font-bold text-muted">{unit.label}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

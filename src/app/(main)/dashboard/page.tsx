@@ -171,11 +171,11 @@ function LiveFightHero({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {bestA && <OddsDisplay odds={bestA} label="Favourite" movement={-0.08} size="sm" />}
+              {bestA && <OddsDisplay odds={bestA} label="Favourite" size="sm" />}
               <div className="flex h-8 w-16 items-center justify-center">
                 <span className="text-xs font-bold text-muted">VS</span>
               </div>
-              {bestB && <OddsDisplay odds={bestB} label="Underdog" movement={0.62} size="sm" />}
+              {bestB && <OddsDisplay odds={bestB} label="Underdog" size="sm" />}
             </div>
           </div>
 
@@ -275,52 +275,17 @@ function UpcomingEventsSection({ events: eventList }: { events: Event[] }) {
 }
 
 function OddsMoversSection() {
-  const movers = [
-    { fight: "Catterall vs Prograis", change: "+26%", from: "1.90", to: "2.40", direction: "up" as const },
-    { fight: "Dubois vs Hrgovic", change: "-24%", from: "1.70", to: "1.36", direction: "down" as const },
-    { fight: "Stevenson vs Zepeda", change: "+22%", from: "1.75", to: "2.15", direction: "up" as const },
-  ];
-
   return (
     <Card title="Biggest Odds Movers" titleIcon={<TrendingUp className="h-4 w-4" />} action={{ label: "View Odds Centre" }}>
-      <div className="space-y-3">
-        {movers.map((m, i) => (
-          <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2 transition-colors hover:bg-card-hover">
-            <div>
-              <p className="text-xs font-medium text-white">{m.fight}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold ${m.direction === "up" ? "text-fp-red" : "text-success"}`}>
-                {m.direction === "up" ? <TrendingUp className="inline h-3 w-3" /> : null} {m.change}
-              </span>
-              <span className="text-[10px] text-muted">{m.from} → {m.to}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <p className="py-4 text-center text-xs text-muted">Odds movement data unavailable</p>
     </Card>
   );
 }
 
 function LatestResultsSection() {
-  const results = [
-    { date: "Sat 6 Apr", fighters: "Ryan Garcia vs Devin Haney", method: "TKO R7", methodColor: "text-fp-red" },
-    { date: "Sat 6 Apr", fighters: "Liam Smith vs Chris Eubank Jr.", method: "UD", methodColor: "text-muted" },
-    { date: "Fri 5 Apr", fighters: "Mikaela Mayer vs Sandy Ryan", method: "UD", methodColor: "text-muted" },
-    { date: "Fri 5 Apr", fighters: "Jai Opetaia vs Ellis Zorro", method: "TKO R4", methodColor: "text-fp-red" },
-  ];
-
   return (
     <Card title="Latest Results" titleIcon={<Trophy className="h-4 w-4" />} action={{ label: "View All" }}>
-      <div className="space-y-2">
-        {results.map((r, i) => (
-          <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs">
-            <span className="hidden w-16 shrink-0 text-muted sm:block">{r.date}</span>
-            <span className="min-w-0 flex-1 truncate font-medium text-white">{r.fighters}</span>
-            <span className={`shrink-0 font-bold ${r.methodColor}`}>{r.method}</span>
-          </div>
-        ))}
-      </div>
+      <p className="py-4 text-center text-xs text-muted">Results data unavailable</p>
     </Card>
   );
 }
@@ -459,26 +424,9 @@ function PromotionsCard({ promotions: promoList }: { promotions: Promotion[] }) 
 }
 
 function IntelligenceSection() {
-  const insights = [
-    { title: "Why Stevenson is in control through 5 rounds", tag: "Live Analysis", tagColor: "bg-fp-red" },
-    { title: "Joshua vs Wilder: Key stats and comparison", tag: "Pre-Fight", tagColor: "bg-fp-blue" },
-    { title: "Best value bets for this weekend's fights", tag: "Odds Insight", tagColor: "bg-yellow-600" },
-  ];
-
   return (
     <Card title="Fight Pulse Intelligence" titleIcon={<Brain className="h-4 w-4" />} action={{ label: "View All" }}>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {insights.map((insight, i) => (
-          <div key={i} className="group cursor-pointer rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-bright hover:bg-card-hover">
-            <span className={`inline-block rounded px-2 py-0.5 text-[9px] font-bold text-white ${insight.tagColor}`}>
-              {insight.tag}
-            </span>
-            <h4 className="mt-2 text-sm font-medium text-white group-hover:text-fp-red">
-              {insight.title}
-            </h4>
-          </div>
-        ))}
-      </div>
+      <p className="py-4 text-center text-xs text-muted">Intelligence insights unavailable</p>
     </Card>
   );
 }

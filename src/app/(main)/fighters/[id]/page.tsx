@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, GitCompare, Trophy, Swords, TrendingUp, Award, Newspaper } from "lucide-react";
+import { ArrowLeft, Bell, GitCompare, Trophy, Swords, Award, Newspaper } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/shared/Card";
 import TabBar from "@/components/shared/TabBar";
@@ -14,26 +14,20 @@ import type { Fighter } from "@/lib/types";
 export default function FighterProfilePage() {
   const params = useParams();
   const [fighter, setFighter] = useState<Fighter | null>(null);
-  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
 
   useEffect(() => {
     async function loadData() {
       const fighterId = params.id as string;
-      const [fighterData, allFightersData] = await Promise.all([
-        fightersService.getById(fighterId),
-        fightersService.getAll(),
-      ]);
+      let fighterData = await fightersService.getById(fighterId);
 
-      setAllFighters(allFightersData);
-
-      if (fighterData) {
-        setFighter(fighterData);
-      } else if (allFightersData.length > 0) {
-        setFighter(allFightersData[0]);
+      if (!fighterData) {
+        const allFightersData = await fightersService.getAll();
+        fighterData = allFightersData[0] ?? null;
       }
 
+      setFighter(fighterData);
       setLoading(false);
     }
     loadData();
@@ -126,29 +120,7 @@ export default function FighterProfilePage() {
       <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:p-6">
         <div className="space-y-4 lg:col-span-4">
           <Card title="Next Fight" titleIcon={<Swords className="h-4 w-4" />}>
-            <div className="rounded-md border border-border bg-surface p-4">
-              <h4 className="text-sm font-bold text-white">
-                {fighter.name} vs {allFighters.length > 1 ? allFighters[1].name : "TBD"}
-              </h4>
-              <p className="mt-1 text-xs text-muted">{fighter.division}</p>
-              <p className="mt-1 text-xs text-muted">Sat 21 Dec 2025 · Kingdom Arena, Riyadh</p>
-              <div className="mt-3 flex justify-center gap-4">
-                <div className="text-center">
-                  <span className="text-lg font-bold text-white">1.44</span>
-                  <p className="text-[10px] text-muted">Favourite</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-lg font-bold text-white">3.00</span>
-                  <p className="text-[10px] text-muted">Underdog</p>
-                </div>
-              </div>
-              <Link
-                href={`/fights/fight-4`}
-                className="mt-3 flex w-full items-center justify-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-muted transition-colors hover:text-white"
-              >
-                View Fight →
-              </Link>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">No upcoming fight scheduled</p>
           </Card>
 
           <Card title="Career Record" titleIcon={<Trophy className="h-4 w-4" />}>
@@ -218,26 +190,8 @@ export default function FighterProfilePage() {
         </div>
 
         <div className="space-y-4 lg:col-span-4">
-          <Card title="Recent Fights" titleIcon={<Swords className="h-4 w-4" />} action={{ label: "View All Fights" }}>
-            <div className="space-y-2">
-              {[
-                { opponent: "Francis Ngannou", date: "8 Mar 2024", result: "W", method: "KO", round: "R2" },
-                { opponent: "Otto Wallin", date: "23 Dec 2023", result: "W", method: "UD", round: "R12" },
-                { opponent: "Robert Helenius", date: "12 Aug 2023", result: "W", method: "TKO", round: "R7" },
-                { opponent: "Jermaine Franklin", date: "1 Apr 2023", result: "W", method: "UD", round: "R12" },
-                { opponent: "Oleksandr Usyk", date: "20 Aug 2022", result: "L", method: "SD", round: "R12" },
-              ].map((fight, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2">
-                  <span className="text-[10px] text-muted w-20">{fight.date}</span>
-                  <span className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white ${fight.result === "W" ? "bg-success" : "bg-fp-red"}`}>
-                    {fight.result}
-                  </span>
-                  <span className="flex-1 text-xs text-white">{fight.opponent}</span>
-                  <span className="text-xs text-muted">{fight.method}</span>
-                  <span className="text-xs text-muted">{fight.round}</span>
-                </div>
-              ))}
-            </div>
+          <Card title="Recent Fights" titleIcon={<Swords className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">Fight history data unavailable</p>
           </Card>
         </div>
 
@@ -278,32 +232,11 @@ export default function FighterProfilePage() {
           </Card>
 
           <Card title="Key Achievements" titleIcon={<Award className="h-4 w-4" />}>
-            <div className="space-y-2">
-              {[
-                "Unified World Heavyweight Champion",
-                "Olympic Gold Medalist (London 2012)",
-                "Commonwealth Heavyweight Champion",
-              ].map((achievement, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <Trophy className="h-3 w-3 text-yellow-500" />
-                  <span className="text-white">{achievement}</span>
-                </div>
-              ))}
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Achievement data unavailable</p>
           </Card>
 
-          <Card title="Latest News" titleIcon={<Newspaper className="h-4 w-4" />} action={{ label: "View All News" }}>
-            <div className="space-y-3">
-              {[
-                { title: "Training camp preparations underway", time: "2 days ago" },
-                { title: "Fight officially confirmed for December", time: "1 week ago" },
-              ].map((news, i) => (
-                <div key={i} className="cursor-pointer rounded-md border border-border bg-surface p-3 transition-colors hover:bg-card-hover">
-                  <p className="text-xs font-medium text-white">{news.title}</p>
-                  <p className="mt-1 text-[10px] text-muted">{news.time}</p>
-                </div>
-              ))}
-            </div>
+          <Card title="Latest News" titleIcon={<Newspaper className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">No news available</p>
           </Card>
         </div>
       </div>
