@@ -37,28 +37,7 @@ export default function Header() {
           </span>
         </Link>
 
-        <div className="hidden flex-1 lg:block">
-          <nav className="flex items-center gap-6">
-            {[
-              { label: "Dashboard", href: "/dashboard" },
-              { label: "Live", href: "/live" },
-              { label: "Upcoming", href: "/upcoming" },
-              { label: "Results", href: "/results" },
-              { label: "Fighters", href: "/fighters" },
-              { label: "Events", href: "/events" },
-              { label: "Odds", href: "/odds" },
-              { label: "Intelligence", href: "/intelligence" },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-muted transition-colors hover:text-white"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+        <div className="flex-1" />
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <form onSubmit={handleSearch} className="relative hidden sm:block">
@@ -80,13 +59,10 @@ export default function Header() {
           </Link>
           <Link
             href="/alerts"
-            className="relative rounded-md p-2 text-muted transition-colors hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted transition-colors hover:bg-card hover:text-foreground"
             aria-label="Alerts"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-fp-red text-[9px] font-bold text-white">
-              3
-            </span>
           </Link>
           <Link
             href="/settings"

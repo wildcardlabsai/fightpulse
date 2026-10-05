@@ -113,6 +113,20 @@ export default function FightDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Mobile odds */}
+        {odds.length > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-4 md:hidden">
+            <div className="rounded border border-border bg-surface px-4 py-2 text-center">
+              <span className="text-lg font-bold text-white">{odds[0].fighterAOdds.toFixed(2)}</span>
+              <p className="text-[10px] text-muted">Favourite</p>
+            </div>
+            <div className="rounded border border-border bg-surface px-4 py-2 text-center">
+              <span className="text-lg font-bold text-white">{odds[0].fighterBOdds.toFixed(2)}</span>
+              <p className="text-[10px] text-muted">Underdog</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -129,9 +143,9 @@ export default function FightDetailPage() {
           <Card title="Tale of the Tape" titleIcon={<Swords className="h-4 w-4" />}>
             <div className="space-y-3">
               {[
-                ["Age", "25", "25"],
-                ["Height", fight.fighterA.height ?? "-", fight.fighterB.height ?? "-"],
-                ["Reach", fight.fighterA.reach ?? "-", fight.fighterB.reach ?? "-"],
+                ["Age", "—", "—"],
+                ["Height", fight.fighterA.height ?? "—", fight.fighterB.height ?? "—"],
+                ["Reach", fight.fighterA.reach ?? "—", fight.fighterB.reach ?? "—"],
                 ["Stance", fight.fighterA.stance, fight.fighterB.stance],
                 ["Division", fight.fighterA.division, fight.fighterB.division],
                 ["Rounds", String(fight.scheduledRounds), String(fight.scheduledRounds)],
@@ -146,30 +160,7 @@ export default function FightDetailPage() {
           </Card>
 
           <Card title="Recent Form" titleIcon={<TrendingUp className="h-4 w-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="mb-2 text-[10px] font-bold uppercase text-muted">Last 5 Fights - {fight.fighterA.name.split(" ").pop()}</p>
-                <div className="space-y-1">
-                  {["W", "W", "L", "W", "W"].map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px]">
-                      <span className={`flex h-4 w-4 items-center justify-center rounded text-[8px] font-bold text-white ${r === "W" ? "bg-success" : "bg-fp-red"}`}>{r}</span>
-                      <span className="text-muted">vs Opponent</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-bold uppercase text-muted">Last 5 Fights - {fight.fighterB.name.split(" ").pop()}</p>
-                <div className="space-y-1">
-                  {["W", "W", "W", "W", "W"].map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px]">
-                      <span className="flex h-4 w-4 items-center justify-center rounded bg-success text-[8px] font-bold text-white">{r}</span>
-                      <span className="text-muted">vs Opponent</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Fight history data unavailable</p>
           </Card>
         </div>
 
