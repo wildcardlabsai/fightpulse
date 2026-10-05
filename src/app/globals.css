@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-fp-red: var(--fp-red);
+  --color-fp-red-dark: var(--fp-red-dark);
+  --color-fp-blue: var(--fp-blue);
+  --color-fp-blue-dark: var(--fp-blue-dark);
+  --color-card: var(--card-bg);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border-color);
+  --color-border-bright: var(--border-bright);
+  --color-muted: var(--muted-fg);
+  --color-surface: var(--surface-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-header: var(--header-bg);
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --bg: #0a0b0f;
+  --fg: #f0f0f0;
+  --fp-red: #e63946;
+  --fp-red-dark: #c1121f;
+  --fp-blue: #3b82f6;
+  --fp-blue-dark: #1e40af;
+  --card-bg: #12141a;
+  --card-hover: #1a1d25;
+  --border-color: #1e2028;
+  --border-bright: #2a2d38;
+  --muted-fg: #6b7280;
+  --surface-bg: #0e1015;
+  --sidebar-bg: #0c0d12;
+  --header-bg: #0c0d12;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2d38 transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Fight Pulse specific utilities */
+.fp-gradient-red {
+  background: linear-gradient(135deg, var(--fp-red) 0%, var(--fp-red-dark) 100%);
+}
+
+.fp-gradient-blue {
+  background: linear-gradient(135deg, var(--fp-blue) 0%, var(--fp-blue-dark) 100%);
+}
+
+.fp-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.fp-card-hover:hover {
+  background: var(--card-hover);
+  border-color: var(--border-bright);
+}
+
+.fp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fp-hero-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(10, 11, 15, 0) 0%,
+    rgba(10, 11, 15, 0.7) 50%,
+    rgba(10, 11, 15, 1) 100%
+  );
+}
+
+.fp-glow-red {
+  box-shadow: 0 0 20px rgba(230, 57, 70, 0.15);
+}
+
+.fp-glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.fp-tab-active {
+  background: var(--fp-red);
+  color: white;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.fp-tab-inactive {
+  color: var(--muted-fg);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.fp-tab-inactive:hover {
+  color: var(--fg);
+  background: var(--card-hover);
+}
+
+.fp-stat-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+
+.fp-stat-bar-fill-red {
+  height: 100%;
+  background: var(--fp-red);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.fp-stat-bar-fill-blue {
+  height: 100%;
+  background: var(--fp-blue);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.fp-live-pulse {
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.fp-shimmer {
+  background: linear-gradient(90deg, var(--card-bg) 25%, var(--card-hover) 50%, var(--card-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
