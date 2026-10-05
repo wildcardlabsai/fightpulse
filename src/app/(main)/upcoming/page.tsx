@@ -119,6 +119,22 @@ export default function UpcomingPage() {
                   </div>
                 </div>
 
+                {/* Mobile odds & date */}
+                <div className="mt-3 flex items-center justify-between md:hidden">
+                  {fightOdds.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
+                      <span className="text-[10px] text-muted">vs</span>
+                      <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {event && (
+                    <span className="text-[10px] text-muted">
+                      {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </span>
+                  )}
+                </div>
+
                 {event && (
                   <div className="mt-3 flex items-center gap-4 text-[10px] text-muted">
                     <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.venue.name}, {event.venue.city}</span>

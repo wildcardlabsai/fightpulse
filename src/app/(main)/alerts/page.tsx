@@ -59,13 +59,12 @@ export default function AlertsPage() {
         />
 
         {/* Alert Summary Cards */}
-        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { count: 12, label: "Active Alerts", sublabel: "Across all categories", icon: <Bell className="h-5 w-5" /> },
-            { count: 4, label: "Upcoming Fight Alerts", sublabel: "Next: Garcia vs Haney", icon: <Calendar className="h-5 w-5" /> },
-            { count: 3, label: "Odds Movement Alerts", sublabel: "Watching price changes", icon: <TrendingUp className="h-5 w-5" /> },
-            { count: 2, label: "News Alerts", sublabel: "For followed fighters", icon: <Newspaper className="h-5 w-5" /> },
-            { count: 3, label: "Fight Pulse Signal Alerts", sublabel: "Momentum, trends & insights", icon: <Zap className="h-5 w-5" /> },
+            { count: alertList.length, label: "Recent Alerts", sublabel: "From your alert feed", icon: <Bell className="h-5 w-5" /> },
+            { count: alertList.filter(a => a.type === "fight").length, label: "Fight Alerts", sublabel: "Upcoming fight reminders", icon: <Calendar className="h-5 w-5" /> },
+            { count: alertList.filter(a => a.type === "odds").length, label: "Odds Alerts", sublabel: "Price movement alerts", icon: <TrendingUp className="h-5 w-5" /> },
+            { count: alertList.filter(a => a.type === "signal").length, label: "Signal Alerts", sublabel: "Momentum & insights", icon: <Zap className="h-5 w-5" /> },
           ].map((card, i) => (
             <div key={i} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-fp-red">{card.icon}</div>
@@ -130,78 +129,38 @@ export default function AlertsPage() {
               </button>
             </Card>
 
-            {/* Upcoming & Recent */}
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Card title="Upcoming Alerts" titleIcon={<Calendar className="h-4 w-4" />} action={{ label: "View All" }}>
-                <div className="space-y-3">
-                  {[
-                    { date: "20 APR", fight: "Ryan Garcia vs Devin Haney", type: "Fight start reminder" },
-                    { date: "21 APR", fight: "Catterall vs Prograis", type: "Odds movement alert" },
-                    { date: "27 APR", fight: "Dubois vs Hrgovic", type: "Fight start reminder" },
-                  ].map((alert, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-md border border-border bg-surface p-2">
-                      <div className="flex h-10 w-10 flex-col items-center justify-center rounded bg-fp-red/20 text-fp-red">
-                        <span className="text-[8px] font-bold">{alert.date.split(" ")[1]}</span>
-                        <span className="text-sm font-black">{alert.date.split(" ")[0]}</span>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-white">{alert.fight}</p>
-                        <p className="text-[10px] text-muted">{alert.type}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
+            {/* Recent Alerts */}
+            <div className="mt-4">
               <Card title="Recent Alerts" titleIcon={<Bell className="h-4 w-4" />} action={{ label: "View All" }}>
-                <div className="space-y-3">
-                  {alertList.map((alert) => (
-                    <div key={alert.id} className="flex items-center gap-3 rounded-md border border-border bg-surface p-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fp-red/20">
-                        {alert.type === "odds" && <TrendingUp className="h-3 w-3 text-fp-red" />}
-                        {alert.type === "fight" && <Calendar className="h-3 w-3 text-fp-red" />}
-                        {alert.type === "signal" && <Zap className="h-3 w-3 text-fp-red" />}
-                        {alert.type === "news" && <Newspaper className="h-3 w-3 text-fp-red" />}
+                {alertList.length > 0 ? (
+                  <div className="space-y-3">
+                    {alertList.map((alert) => (
+                      <div key={alert.id} className="flex items-center gap-3 rounded-md border border-border bg-surface p-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fp-red/20">
+                          {alert.type === "odds" && <TrendingUp className="h-3 w-3 text-fp-red" />}
+                          {alert.type === "fight" && <Calendar className="h-3 w-3 text-fp-red" />}
+                          {alert.type === "signal" && <Zap className="h-3 w-3 text-fp-red" />}
+                          {alert.type === "news" && <Newspaper className="h-3 w-3 text-fp-red" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-white">{alert.title}</p>
+                          <p className="truncate text-[10px] text-muted">{alert.description}</p>
+                        </div>
+                        <span className="shrink-0 text-[9px] text-muted">{timeAgo(new Date(alert.timestamp))}</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-white">{alert.title}</p>
-                        <p className="text-[10px] text-muted">{alert.description}</p>
-                      </div>
-                      <span className="text-[9px] text-muted">{timeAgo(new Date(alert.timestamp))}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-4 text-center text-xs text-muted">No alerts yet. Create an alert to get started.</p>
+                )}
               </Card>
             </div>
           </div>
 
           {/* Right column */}
           <div className="space-y-4 lg:col-span-4">
-            <Card title="My Active Alerts" titleIcon={<Bell className="h-4 w-4" />} action={{ label: "View All" }}>
-              <div className="space-y-2">
-                {[
-                  { name: "Ryan Garcia", desc: "Fight start reminder", active: true },
-                  { name: "Devin Haney", desc: "Odds movement (±10%)", active: true },
-                  { name: "Shakur Stevenson", desc: "News alerts", active: true },
-                  { name: "Super Lightweight", desc: "All upcoming fights", active: true },
-                  { name: "Matchroom Boxing", desc: "All fight announcements", active: false },
-                ].map((alert, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-[10px] font-bold text-muted">
-                        {alert.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-white">{alert.name}</p>
-                        <p className="text-[9px] text-muted">{alert.desc}</p>
-                      </div>
-                    </div>
-                    <div className={`h-5 w-9 rounded-full p-0.5 ${alert.active ? "bg-fp-red" : "bg-border"}`}>
-                      <div className={`h-4 w-4 rounded-full bg-white transition-transform ${alert.active ? "translate-x-4" : ""}`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <Card title="My Active Alerts" titleIcon={<Bell className="h-4 w-4" />}>
+              <p className="py-4 text-center text-xs text-muted">No active alerts. Use the form to create your first alert.</p>
             </Card>
 
             <Card title="Alert Settings" titleIcon={<Settings className="h-4 w-4" />}>
