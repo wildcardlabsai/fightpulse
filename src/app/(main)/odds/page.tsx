@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, TrendingDown, Bell, Gem, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, Bell, Gem, Clock } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
@@ -69,74 +69,18 @@ export default function OddsCentrePage() {
 
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Biggest Movers */}
-          <Card title="Biggest Odds Movers (24H)" titleIcon={<TrendingUp className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Zepeda vs Farmer", change: "+42%", from: 1.62, to: 2.30, up: true },
-                { fight: "Joshua vs Wilder", change: "-28%", from: 1.45, to: 1.04, up: false },
-                { fight: "Catterall vs Prograis", change: "+26%", from: 1.90, to: 2.40, up: true },
-                { fight: "Dubois vs Hrgovic", change: "-24%", from: 1.36, to: 1.03, up: false },
-                { fight: "Stevenson vs Zepeda", change: "+22%", from: 1.75, to: 2.15, up: true },
-              ].map((m, i) => (
-                <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-white">{m.fight}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`flex items-center gap-0.5 text-xs font-bold ${m.up ? "text-fp-red" : "text-success"}`}>
-                      {m.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {m.change}
-                    </span>
-                    <span className="text-[10px] text-muted">{m.from.toFixed(2)} → {m.to.toFixed(2)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Biggest Odds Movers (24H)" titleIcon={<TrendingUp className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">Odds movement data unavailable</p>
           </Card>
 
           {/* Value Opportunities */}
-          <Card title="Value Opportunities" titleIcon={<Gem className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Liam Smith vs Eubank Jr.", value: "12.4%", odds: 2.10, bookmaker: "Sky Bet" },
-                { fight: "Catterall vs Prograis", value: "8.7%", odds: 2.40, bookmaker: "bet365" },
-                { fight: "Dubois vs Hrgovic", value: "7.9%", odds: 3.60, bookmaker: "William Hill" },
-                { fight: "Zepeda vs Farmer", value: "6.8%", odds: 2.30, bookmaker: "Unibet" },
-              ].map((v, i) => (
-                <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-white">{v.fight}</p>
-                    <p className="text-[10px] text-muted">
-                      Value <span className="font-bold text-success">{v.value}</span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-white">{v.odds.toFixed(2)}</span>
-                    <p className="text-[9px] text-muted">{v.bookmaker}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Value Opportunities" titleIcon={<Gem className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">Value analysis unavailable</p>
           </Card>
 
           {/* Odds Alerts */}
-          <Card title="Odds Alerts" titleIcon={<Bell className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Zepeda vs Farmer", time: "2m", change: "+18% (1.95 → 2.30)" },
-                { fight: "Joshua vs Wilder", time: "8m", change: "-12% (1.18 → 1.04)" },
-                { fight: "Catterall vs Prograis", time: "12m", change: "+15% (2.10 → 2.40)" },
-                { fight: "Dubois vs Hrgovic", time: "28m", change: "-20% (1.70 → 1.36)" },
-              ].map((a, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2">
-                  <span className="text-[10px] text-muted">{a.time}</span>
-                  <div>
-                    <p className="text-xs font-medium text-white">{a.fight}</p>
-                    <p className="text-[10px] text-muted">Odds moved {a.change}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Odds Alerts" titleIcon={<Bell className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">No odds alerts</p>
           </Card>
         </div>
 
@@ -174,11 +118,7 @@ export default function OddsCentrePage() {
                     const fightOdds = oddsMap[fight.id] ?? [];
                     return (
                       <tr key={fight.id} className="border-b border-border hover:bg-card-hover">
-                        <td className="px-3 py-2.5 text-muted">
-                          {allFights.find(f => f.eventId)
-                            ? "Sat 20 Apr"
-                            : "-"}
-                        </td>
+                        <td className="px-3 py-2.5 text-muted">—</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs">{getCountryFlag(fight.fighterA.countryCode)}</span>

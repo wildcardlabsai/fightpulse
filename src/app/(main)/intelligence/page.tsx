@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Brain, TrendingUp, Zap, BarChart3, Target, Activity } from "lucide-react";
+import { Brain, Zap, BarChart3, Target, Activity } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
 import LiveBadge from "@/components/shared/LiveBadge";
-import StatBar from "@/components/shared/StatBar";
 import { fights as fightsService } from "@/lib/services/fights";
 import { live } from "@/lib/services/live";
 import type { Fight, MomentumSnapshot, RoundStats, FightSignal } from "@/lib/types";
@@ -119,41 +118,29 @@ export default function IntelligencePage() {
           {/* Momentum Breakdown */}
           <div className="lg:col-span-4">
             <Card title="Momentum Breakdown" titleIcon={<Target className="h-4 w-4" />}>
-              <div className="space-y-3">
-                {[
-                  { label: "Punch Output", a: 78, b: 42 },
-                  { label: "Accuracy", a: 72, b: 38 },
-                  { label: "Power Punches", a: 65, b: 28 },
-                  { label: "Defence", a: 80, b: 35 },
-                  { label: "Ring Control", a: 70, b: 30 },
-                  { label: "Recent Rounds", a: 68, b: 32 },
-                ].map((item) => (
-                  <StatBar key={item.label} label={item.label} valueA={item.a} valueB={item.b} />
-                ))}
-              </div>
+              <p className="py-4 text-center text-xs text-muted">Detailed momentum breakdown unavailable</p>
             </Card>
           </div>
 
           {/* Key Signals */}
           <div className="lg:col-span-3">
             <Card title="Key Signals" titleIcon={<Zap className="h-4 w-4" />} liveBadge>
-              <div className="space-y-3">
-                {[
-                  { time: "2:15", title: "Stevenson's jab accuracy increasing", desc: "Landed 8 of last 10 jabs (80%)", icon: <TrendingUp className="h-3 w-3" /> },
-                  { time: "1:32", title: "Harutyunyan's output dropping", desc: "Punch volume down 42% in R6", icon: <TrendingUp className="h-3 w-3 rotate-180" /> },
-                  { time: "1:05", title: "Stevenson controlling centre", desc: "78% of round spent in centre of ring", icon: <Target className="h-3 w-3" /> },
-                  { time: "0:58", title: "Harutyunyan on the back foot", desc: "Defensive posture for last 30 seconds", icon: <Zap className="h-3 w-3" /> },
-                ].map((signal, i) => (
-                  <div key={i} className="flex gap-2 rounded-md border border-border bg-surface p-2">
-                    <div className="mt-0.5 text-fp-red">{signal.icon}</div>
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium text-white">{signal.title}</p>
-                      <p className="text-[9px] text-muted">{signal.desc}</p>
+              {signals.length > 0 ? (
+                <div className="space-y-3">
+                  {signals.map((signal, i) => (
+                    <div key={i} className="flex gap-2 rounded-md border border-border bg-surface p-2">
+                      <div className="mt-0.5 text-fp-red"><Zap className="h-3 w-3" /></div>
+                      <div className="flex-1">
+                        <p className="text-[10px] font-medium text-white">{signal.name}</p>
+                        <p className="text-[9px] text-muted">{signal.status} — {signal.confidence} confidence</p>
+                      </div>
+                      <span className="text-[9px] text-muted">{signal.lastUpdated}</span>
                     </div>
-                    <span className="text-[9px] text-muted">{signal.time}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-4 text-center text-xs text-muted">No signals available</p>
+              )}
             </Card>
           </div>
         </div>
@@ -207,35 +194,7 @@ export default function IntelligencePage() {
           </Card>
 
           <Card title="Momentum Explanation" titleIcon={<Brain className="h-4 w-4" />}>
-            <p className="mb-3 text-xs text-muted">Why did momentum change?</p>
-            <div className="space-y-3">
-              <div className="rounded-md border border-success/30 bg-success/5 p-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <span className="text-xs font-bold text-success">Stevenson&apos;s momentum increased (+8)</span>
-                  <span className="ml-auto text-[9px] text-muted">2:15</span>
-                </div>
-                <ul className="mt-2 space-y-1 text-[10px] text-muted">
-                  <li>• Higher jab accuracy (80%)</li>
-                  <li>• Increased power punch output</li>
-                  <li>• Controlling centre of ring</li>
-                  <li>• Harutyunyan&apos;s output decreased</li>
-                </ul>
-              </div>
-              <div className="rounded-md border border-fp-red/30 bg-fp-red/5 p-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 rotate-180 text-fp-red" />
-                  <span className="text-xs font-bold text-fp-red">Harutyunyan&apos;s momentum decreased (-6)</span>
-                  <span className="ml-auto text-[9px] text-muted">1:32</span>
-                </div>
-                <ul className="mt-2 space-y-1 text-[10px] text-muted">
-                  <li>• Lower punch volume (down 42%)</li>
-                  <li>• Back foot for extended period</li>
-                  <li>• Defensive posture</li>
-                  <li>• Landed only 1 power punch in last 60 seconds</li>
-                </ul>
-              </div>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Momentum analysis unavailable</p>
           </Card>
         </div>
 

@@ -117,8 +117,8 @@ export default function LiveFightPage() {
               <div className="flex gap-4">
                 {odds.slice(0, 1).map(o => (
                   <div key={o.id} className="flex gap-4">
-                    <OddsDisplay odds={o.fighterAOdds} label="Favourite" movement={-0.08} />
-                    <OddsDisplay odds={o.fighterBOdds} label="Underdog" movement={0.62} />
+                    <OddsDisplay odds={o.fighterAOdds} label="Favourite" />
+                    <OddsDisplay odds={o.fighterBOdds} label="Underdog" />
                   </div>
                 ))}
               </div>
@@ -237,29 +237,7 @@ export default function LiveFightPage() {
           </Card>
 
           <Card title="Judges Scorecard" titleIcon={<Shield className="h-4 w-4" />}>
-            <p className="text-center text-xs text-muted">(Unofficial)</p>
-            <div className="mt-2 overflow-hidden rounded-md border border-border">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-surface">
-                    <th className="px-2 py-2 text-left text-muted">Round</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 1</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 2</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 3</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4, 5, 6].map((round) => (
-                    <tr key={round} className="border-b border-border last:border-0">
-                      <td className="px-2 py-1.5 font-bold text-white">{round}</td>
-                      <td className="px-2 py-1.5 text-center text-muted">10 - 9</td>
-                      <td className="px-2 py-1.5 text-center text-muted">10 - 9</td>
-                      <td className="px-2 py-1.5 text-center text-muted">{round === 3 ? "9 - 10" : "10 - 9"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Scorecard data unavailable</p>
           </Card>
         </div>
 
