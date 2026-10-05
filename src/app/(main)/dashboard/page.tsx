@@ -151,6 +151,7 @@ function LiveFightHero({
             </div>
           </div>
 
+          {/* Desktop momentum & odds */}
           <div className="hidden flex-col items-center gap-2 md:flex">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Fight Pulse Momentum</p>
             <div className="flex items-center gap-6">
@@ -192,6 +193,38 @@ function LiveFightHero({
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Mobile compact momentum & odds */}
+        <div className="mt-4 md:hidden">
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted">
+            <span className="text-fp-red">{momentum.fighterAMomentum}%</span>
+            <span>Momentum</span>
+            <span className="text-fp-blue">{momentum.fighterBMomentum}%</span>
+          </div>
+          <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fp-blue/30">
+            <motion.div
+              className="h-full rounded-full bg-fp-red"
+              initial={{ width: 0 }}
+              animate={{ width: `${momentum.fighterAMomentum}%` }}
+              transition={{ duration: 1 }}
+            />
+          </div>
+          {(bestA || bestB) && (
+            <div className="mt-2 flex items-center justify-between">
+              {bestA && (
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {bestA.toFixed(2)}
+                </span>
+              )}
+              <span className="text-[10px] text-muted">Best Odds</span>
+              {bestB && (
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {bestB.toFixed(2)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -281,10 +314,10 @@ function LatestResultsSection() {
     <Card title="Latest Results" titleIcon={<Trophy className="h-4 w-4" />} action={{ label: "View All" }}>
       <div className="space-y-2">
         {results.map((r, i) => (
-          <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2 text-xs">
-            <span className="w-16 text-muted">{r.date}</span>
-            <span className="flex-1 font-medium text-white">{r.fighters}</span>
-            <span className={`font-bold ${r.methodColor}`}>{r.method}</span>
+          <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs">
+            <span className="hidden w-16 shrink-0 text-muted sm:block">{r.date}</span>
+            <span className="min-w-0 flex-1 truncate font-medium text-white">{r.fighters}</span>
+            <span className={`shrink-0 font-bold ${r.methodColor}`}>{r.method}</span>
           </div>
         ))}
       </div>
