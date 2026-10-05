@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckSquare, Filter, Search, Trophy, Users, CalendarDays, Globe } from "lucide-react";
+import { CheckSquare, Search, Trophy } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
@@ -68,12 +68,6 @@ export default function ResultsPage() {
         <PageHero
           title="Results"
           subtitle="Complete fight history. Real results. Detailed analysis."
-          badges={[
-            { icon: <Trophy className="h-4 w-4" />, label: "12,487", sublabel: "Total Fights" },
-            { icon: <Users className="h-4 w-4" />, label: "3,842", sublabel: "Fighters" },
-            { icon: <CalendarDays className="h-4 w-4" />, label: "186", sublabel: "Events" },
-            { icon: <Globe className="h-4 w-4" />, label: "42", sublabel: "Promotions" },
-          ]}
         />
         <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
       </div>
@@ -86,10 +80,7 @@ export default function ResultsPage() {
         title="Results"
         subtitle="Complete fight history. Real results. Detailed analysis."
         badges={[
-          { icon: <Trophy className="h-4 w-4" />, label: "12,487", sublabel: "Total Fights" },
-          { icon: <Users className="h-4 w-4" />, label: "3,842", sublabel: "Fighters" },
-          { icon: <CalendarDays className="h-4 w-4" />, label: "186", sublabel: "Events" },
-          { icon: <Globe className="h-4 w-4" />, label: "42", sublabel: "Promotions" },
+          { icon: <Trophy className="h-4 w-4" />, label: `${results.length}`, sublabel: "Results" },
         ]}
       />
 

@@ -84,7 +84,7 @@ export default function IntelligencePage() {
           <div className="lg:col-span-5">
             <Card title="Live Momentum" titleIcon={<Activity className="h-4 w-4" />} liveBadge>
               <p className="mb-2 text-xs text-muted">
-                {fight.fighterA.name} vs {fight.fighterB.name} | Round {fight.currentRound} of {fight.scheduledRounds} | 2:15
+                {fight.fighterA.name} vs {fight.fighterB.name} | Round {fight.currentRound} of {fight.scheduledRounds}
               </p>
               <div className="flex items-center justify-between">
                 <div className="text-center">
