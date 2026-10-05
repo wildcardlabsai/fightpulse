@@ -84,7 +84,7 @@ export default function LivePage() {
                         <span className="rounded bg-surface px-2 py-0.5 text-xs font-bold text-white">
                           Round {fight.currentRound} of {fight.scheduledRounds}
                         </span>
-                        <span className="font-mono text-sm font-bold text-fp-red">2:15</span>
+                        <span className="font-mono text-sm font-bold text-fp-red">LIVE</span>
                       </div>
 
                       <div className="mt-4 flex items-center justify-between">
@@ -121,6 +121,20 @@ export default function LivePage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Mobile compact momentum */}
+                      {latest && (
+                        <div className="mt-3 md:hidden">
+                          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted">
+                            <span className="text-fp-red">{latest.fighterAMomentum}%</span>
+                            <span>Momentum</span>
+                            <span className="text-fp-blue">{latest.fighterBMomentum}%</span>
+                          </div>
+                          <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fp-blue/30">
+                            <div className="h-full rounded-full bg-fp-red" style={{ width: `${latest.fighterAMomentum}%` }} />
+                          </div>
+                        </div>
+                      )}
 
                       {fightOdds.length > 0 && (
                         <div className="mt-4 flex justify-center gap-4">

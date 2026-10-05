@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, TrendingDown, Bell, Gem, Radio, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Bell, Gem, Clock } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
@@ -43,12 +43,6 @@ export default function OddsCentrePage() {
         <PageHero
           title="Odds Centre"
           subtitle="Live and historical boxing odds from leading bookmakers. Track movements. Find value. Stay ahead."
-          badges={[
-            { icon: <Radio className="h-4 w-4" />, label: "2", sublabel: "Live Fights" },
-            { icon: <Clock className="h-4 w-4" />, label: "18", sublabel: "Upcoming Fights" },
-            { icon: <BarChart3 className="h-4 w-4" />, label: "12", sublabel: "Tracked Bookmakers" },
-            { icon: <TrendingUp className="h-4 w-4" />, label: "2.4s", sublabel: "Odds Updates" },
-          ]}
         />
         <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
       </div>
@@ -61,10 +55,8 @@ export default function OddsCentrePage() {
         title="Odds Centre"
         subtitle="Live and historical boxing odds from leading bookmakers. Track movements. Find value. Stay ahead."
         badges={[
-          { icon: <Radio className="h-4 w-4" />, label: "2", sublabel: "Live Fights" },
-          { icon: <Clock className="h-4 w-4" />, label: "18", sublabel: "Upcoming Fights" },
-          { icon: <BarChart3 className="h-4 w-4" />, label: "12", sublabel: "Tracked Bookmakers" },
-          { icon: <TrendingUp className="h-4 w-4" />, label: "2.4s", sublabel: "Odds Updates" },
+          { icon: <Clock className="h-4 w-4" />, label: `${upcomingFights.length}`, sublabel: "Upcoming Fights" },
+          { icon: <BarChart3 className="h-4 w-4" />, label: `${bookmakers.length}`, sublabel: "Tracked Bookmakers" },
         ]}
       />
 
@@ -208,7 +200,7 @@ export default function OddsCentrePage() {
                           {fightOdds.length > 0 ? Math.min(...fightOdds.map(o => o.fighterAOdds)).toFixed(2) : "-"}
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className="text-xs font-bold text-fp-red">+26%</span>
+                          <span className="text-xs text-muted">—</span>
                         </td>
                       </tr>
                     );

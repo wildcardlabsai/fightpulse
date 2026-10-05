@@ -83,10 +83,7 @@ export default function LiveFightPage() {
         <span className="rounded bg-surface px-3 py-1 font-mono text-sm font-bold text-white">
           ROUND {fight.currentRound} OF {fight.scheduledRounds}
         </span>
-        <span className="font-mono text-lg font-bold text-fp-red">2:15</span>
-        <span className="ml-auto text-xs text-muted">
-          Prudential Center, Newark, USA
-        </span>
+        <span className="font-mono text-lg font-bold text-fp-red">LIVE</span>
       </div>
 
       {/* Fighter header */}
@@ -139,6 +136,35 @@ export default function LiveFightPage() {
             </div>
           </div>
         </div>
+
+        {/* Mobile compact momentum */}
+        {latestMomentum && (
+          <div className="mt-4 md:hidden">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted">
+              <span className="text-fp-red">{latestMomentum.fighterAMomentum}%</span>
+              <span>Momentum</span>
+              <span className="text-fp-blue">{latestMomentum.fighterBMomentum}%</span>
+            </div>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fp-blue/30">
+              <motion.div
+                className="h-full rounded-full bg-fp-red"
+                animate={{ width: `${latestMomentum.fighterAMomentum}%` }}
+                transition={{ duration: 0.8 }}
+              />
+            </div>
+            {odds.length > 0 && (
+              <div className="mt-2 flex items-center justify-between">
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {odds[0].fighterAOdds.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-muted">Best Odds</span>
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {odds[0].fighterBOdds.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tab bar */}
@@ -151,7 +177,7 @@ export default function LiveFightPage() {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:p-6">
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-12 lg:p-6">
         <div className="space-y-4 lg:col-span-4">
           <Card title="Live Fight Statistics" titleIcon={<BarChart3 className="h-4 w-4" />}>
             <div className="space-y-4">

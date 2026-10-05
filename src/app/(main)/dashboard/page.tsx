@@ -132,7 +132,7 @@ function LiveFightHero({
           <span className="rounded bg-surface px-2 py-0.5 text-xs font-bold text-white">
             ROUND {fight.currentRound} OF {fight.scheduledRounds}
           </span>
-          <span className="text-sm font-mono font-bold text-fp-red">2:15</span>
+          <span className="text-sm font-mono font-bold text-fp-red">LIVE</span>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
@@ -343,7 +343,7 @@ function TodaysLiveFightsCard({ liveFights, liveOdds }: { liveFights: Fight[]; l
             <Link key={fight.id} href={`/live/${fight.id}`} className="block rounded-md border border-fp-red/30 bg-fp-red/5 p-3">
               <div className="flex items-center gap-2 text-[10px]">
                 <span className="rounded bg-fp-red px-1 py-0.5 font-bold text-white">R{fight.currentRound}</span>
-                <span className="font-mono text-fp-red">2:15</span>
+                <span className="font-mono text-fp-red">LIVE</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
                 <div>
