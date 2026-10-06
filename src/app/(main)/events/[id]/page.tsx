@@ -1,18 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, MapPin, Tv, Clock, Share2 } from "lucide-react";
 import Card from "@/components/shared/Card";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_EVENTS, FIXTURE_FIGHTS, FIXTURE_ODDS } from "@/lib/data/fixtures";
+import { events } from "@/lib/services/events";
+import { fights as fightsService } from "@/lib/services/fights";
+import { odds as oddsService } from "@/lib/services/odds";
 import { getCountryFlag } from "@/lib/utils";
+import type { Event, Fight, OddsSnapshot } from "@/lib/types";
 
 export default function EventDetailPage() {
   const params = useParams();
-  const event = FIXTURE_EVENTS.find((e) => e.id === params.id) ?? FIXTURE_EVENTS[0];
-  const fights = FIXTURE_FIGHTS.filter((f) => f.eventId === event.id);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [fightList, setFightList] = useState<Fight[]>([]);
+  const [oddsMap, setOddsMap] = useState<Record<string, OddsSnapshot[]>>({});
   const [activeTab, setActiveTab] = useState("Fight Card");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const id = params.id as string;
+    Promise.all([
+      events.getById(id),
+      fightsService.getByEvent(id),
+    ]).then(async ([eventData, fightsData]) => {
+      if (!eventData) {
+        // Fallback to first event
+        const allEvents = await events.getAll();
+        setEvent(allEvents[0] ?? null);
+        if (allEvents[0]) {
+          const fallbackFights = await fightsService.getByEvent(allEvents[0].id);
+          setFightList(fallbackFights);
+          const oddsResults: Record<string, OddsSnapshot[]> = {};
+          await Promise.all(fallbackFights.map(async (f) => {
+            oddsResults[f.id] = await oddsService.getForFight(f.id);
+          }));
+          setOddsMap(oddsResults);
+        }
+      } else {
+        setEvent(eventData);
+        setFightList(fightsData);
+        const oddsResults: Record<string, OddsSnapshot[]> = {};
+        await Promise.all(fightsData.map(async (f) => {
+          oddsResults[f.id] = await oddsService.getForFight(f.id);
+        }));
+        setOddsMap(oddsResults);
+      }
+      setLoading(false);
+    });
+  }, [params.id]);
+
+  if (loading || !event) {
+    return (
+      <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+    );
+  }
 
   return (
     <div>
@@ -50,10 +93,10 @@ export default function EventDetailPage() {
 
       <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:p-6">
         <div className="space-y-4 lg:col-span-8">
-          <Card title={`Fight Card · ${fights.length} Fights`} titleIcon={<CalendarDays className="h-4 w-4" />}>
+          <Card title={`Fight Card · ${fightList.length} Fights`} titleIcon={<CalendarDays className="h-4 w-4" />}>
             <div className="space-y-3">
-              {fights.map((fight) => {
-                const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+              {fightList.map((fight) => {
+                const fightOdds = oddsMap[fight.id] ?? [];
                 const label = fight.isMainEvent ? "MAIN EVENT" : fight.isCoMain ? "CO-MAIN EVENT" : `${fight.orderOnCard}`;
 
                 return (
@@ -83,14 +126,14 @@ export default function EventDetailPage() {
                         </div>
                       </div>
 
-                      {odds.length > 0 && (
+                      {fightOdds.length > 0 && (
                         <div className="hidden items-center gap-3 md:flex">
                           <div className="rounded border border-border bg-card px-3 py-1 text-center">
-                            <span className="text-sm font-bold text-white">{odds[0].fighterAOdds.toFixed(2)}</span>
+                            <span className="text-sm font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
                             <p className="text-[9px] text-success">Favourite</p>
                           </div>
                           <div className="rounded border border-border bg-card px-3 py-1 text-center">
-                            <span className="text-sm font-bold text-white">{odds[0].fighterBOdds.toFixed(2)}</span>
+                            <span className="text-sm font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
                             <p className="text-[9px] text-fp-red">Underdog</p>
                           </div>
                         </div>
@@ -107,6 +150,14 @@ export default function EventDetailPage() {
                         </div>
                       </div>
                     </div>
+
+                    {fightOdds.length > 0 && (
+                      <div className="mt-2 flex items-center justify-center gap-3 md:hidden">
+                        <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterAOdds.toFixed(2)}</span>
+                        <span className="text-[10px] text-muted">vs</span>
+                        <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">{fightOdds[0].fighterBOdds.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -151,23 +202,7 @@ export default function EventDetailPage() {
             </div>
           </Card>
 
-          <Card title="Event Countdown" titleIcon={<Clock className="h-4 w-4" />}>
-            <div className="flex justify-center gap-3">
-              {[
-                { value: "12", label: "DAYS" },
-                { value: "06", label: "HOURS" },
-                { value: "24", label: "MINS" },
-                { value: "18", label: "SECS" },
-              ].map((unit) => (
-                <div key={unit.label} className="flex flex-col items-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-md border border-border bg-surface">
-                    <span className="text-xl font-black text-white">{unit.value}</span>
-                  </div>
-                  <span className="mt-1 text-[9px] font-bold text-muted">{unit.label}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <EventCountdown eventDate={event.date} />
 
           <button className="w-full rounded-md bg-fp-red px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-fp-red-dark">
             Get Tickets →
@@ -175,5 +210,55 @@ export default function EventDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function EventCountdown({ eventDate }: { eventDate: string }) {
+  const getTimeLeft = useCallback(() => {
+    const diff = new Date(eventDate).getTime() - Date.now();
+    if (diff <= 0) return null;
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      mins: Math.floor((diff / (1000 * 60)) % 60),
+      secs: Math.floor((diff / 1000) % 60),
+    };
+  }, [eventDate]);
+
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    return () => clearInterval(interval);
+  }, [getTimeLeft]);
+
+  if (!timeLeft) {
+    return (
+      <Card title="Event Status" titleIcon={<Clock className="h-4 w-4" />}>
+        <p className="py-4 text-center text-xs font-bold text-fp-red">EVENT STARTED</p>
+      </Card>
+    );
+  }
+
+  const units = [
+    { value: String(timeLeft.days).padStart(2, "0"), label: "DAYS" },
+    { value: String(timeLeft.hours).padStart(2, "0"), label: "HOURS" },
+    { value: String(timeLeft.mins).padStart(2, "0"), label: "MINS" },
+    { value: String(timeLeft.secs).padStart(2, "0"), label: "SECS" },
+  ];
+
+  return (
+    <Card title="Event Countdown" titleIcon={<Clock className="h-4 w-4" />}>
+      <div className="flex justify-center gap-3">
+        {units.map((unit) => (
+          <div key={unit.label} className="flex flex-col items-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-md border border-border bg-surface">
+              <span className="text-xl font-black tabular-nums text-white">{unit.value}</span>
+            </div>
+            <span className="mt-1 text-[9px] font-bold text-muted">{unit.label}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

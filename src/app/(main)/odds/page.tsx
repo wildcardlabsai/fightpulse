@@ -1,16 +1,53 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart3, TrendingUp, TrendingDown, Bell, Gem, Radio, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { BarChart3, TrendingUp, Bell, Gem, Clock } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
 import Card from "@/components/shared/Card";
-import { FIXTURE_ODDS, FIXTURE_FIGHTS, FIXTURE_BOOKMAKERS } from "@/lib/data/fixtures";
+import { odds as oddsService } from "@/lib/services/odds";
+import { fights as fightsService } from "@/lib/services/fights";
 import { impliedProbability, getCountryFlag } from "@/lib/utils";
+import type { Fight, OddsSnapshot, Bookmaker } from "@/lib/types";
 
 export default function OddsCentrePage() {
   const [activeTab, setActiveTab] = useState("Overview");
-  const upcomingFights = FIXTURE_FIGHTS.filter((f) => f.status === "SCHEDULED");
+  const [upcomingFights, setUpcomingFights] = useState<Fight[]>([]);
+  const [allFights, setAllFights] = useState<Fight[]>([]);
+  const [oddsMap, setOddsMap] = useState<Record<string, OddsSnapshot[]>>({});
+  const [bookmakers, setBookmakers] = useState<Bookmaker[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fightsService.getUpcoming(),
+      fightsService.getAll(),
+      oddsService.getAllBookmakers(),
+    ]).then(async ([upcoming, all, bks]) => {
+      setUpcomingFights(upcoming);
+      setAllFights(all);
+      setBookmakers(bks);
+
+      const oddsResults: Record<string, OddsSnapshot[]> = {};
+      await Promise.all(all.map(async (fight) => {
+        oddsResults[fight.id] = await oddsService.getForFight(fight.id);
+      }));
+      setOddsMap(oddsResults);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero
+          title="Odds Centre"
+          subtitle="Live and historical boxing odds from leading bookmakers. Track movements. Find value. Stay ahead."
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -18,10 +55,8 @@ export default function OddsCentrePage() {
         title="Odds Centre"
         subtitle="Live and historical boxing odds from leading bookmakers. Track movements. Find value. Stay ahead."
         badges={[
-          { icon: <Radio className="h-4 w-4" />, label: "2", sublabel: "Live Fights" },
-          { icon: <Clock className="h-4 w-4" />, label: "18", sublabel: "Upcoming Fights" },
-          { icon: <BarChart3 className="h-4 w-4" />, label: "12", sublabel: "Tracked Bookmakers" },
-          { icon: <TrendingUp className="h-4 w-4" />, label: "2.4s", sublabel: "Odds Updates" },
+          { icon: <Clock className="h-4 w-4" />, label: `${upcomingFights.length}`, sublabel: "Upcoming Fights" },
+          { icon: <BarChart3 className="h-4 w-4" />, label: `${bookmakers.length}`, sublabel: "Tracked Bookmakers" },
         ]}
       />
 
@@ -34,74 +69,18 @@ export default function OddsCentrePage() {
 
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Biggest Movers */}
-          <Card title="Biggest Odds Movers (24H)" titleIcon={<TrendingUp className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Zepeda vs Farmer", change: "+42%", from: 1.62, to: 2.30, up: true },
-                { fight: "Joshua vs Wilder", change: "-28%", from: 1.45, to: 1.04, up: false },
-                { fight: "Catterall vs Prograis", change: "+26%", from: 1.90, to: 2.40, up: true },
-                { fight: "Dubois vs Hrgovic", change: "-24%", from: 1.36, to: 1.03, up: false },
-                { fight: "Stevenson vs Zepeda", change: "+22%", from: 1.75, to: 2.15, up: true },
-              ].map((m, i) => (
-                <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-white">{m.fight}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`flex items-center gap-0.5 text-xs font-bold ${m.up ? "text-fp-red" : "text-success"}`}>
-                      {m.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {m.change}
-                    </span>
-                    <span className="text-[10px] text-muted">{m.from.toFixed(2)} → {m.to.toFixed(2)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Biggest Odds Movers (24H)" titleIcon={<TrendingUp className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">Odds movement data unavailable</p>
           </Card>
 
           {/* Value Opportunities */}
-          <Card title="Value Opportunities" titleIcon={<Gem className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Liam Smith vs Eubank Jr.", value: "12.4%", odds: 2.10, bookmaker: "Sky Bet" },
-                { fight: "Catterall vs Prograis", value: "8.7%", odds: 2.40, bookmaker: "bet365" },
-                { fight: "Dubois vs Hrgovic", value: "7.9%", odds: 3.60, bookmaker: "William Hill" },
-                { fight: "Zepeda vs Farmer", value: "6.8%", odds: 2.30, bookmaker: "Unibet" },
-              ].map((v, i) => (
-                <div key={i} className="flex items-center justify-between rounded-md border border-border bg-surface px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-white">{v.fight}</p>
-                    <p className="text-[10px] text-muted">
-                      Value <span className="font-bold text-success">{v.value}</span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-white">{v.odds.toFixed(2)}</span>
-                    <p className="text-[9px] text-muted">{v.bookmaker}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Value Opportunities" titleIcon={<Gem className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">Value analysis unavailable</p>
           </Card>
 
           {/* Odds Alerts */}
-          <Card title="Odds Alerts" titleIcon={<Bell className="h-4 w-4" />} action={{ label: "View All" }}>
-            <div className="space-y-3">
-              {[
-                { fight: "Zepeda vs Farmer", time: "2m", change: "+18% (1.95 → 2.30)" },
-                { fight: "Joshua vs Wilder", time: "8m", change: "-12% (1.18 → 1.04)" },
-                { fight: "Catterall vs Prograis", time: "12m", change: "+15% (2.10 → 2.40)" },
-                { fight: "Dubois vs Hrgovic", time: "28m", change: "-20% (1.70 → 1.36)" },
-              ].map((a, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2">
-                  <span className="text-[10px] text-muted">{a.time}</span>
-                  <div>
-                    <p className="text-xs font-medium text-white">{a.fight}</p>
-                    <p className="text-[10px] text-muted">Odds moved {a.change}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card title="Odds Alerts" titleIcon={<Bell className="h-4 w-4" />}>
+            <p className="py-4 text-center text-xs text-muted">No odds alerts</p>
           </Card>
         </div>
 
@@ -127,7 +106,7 @@ export default function OddsCentrePage() {
                     <th className="px-3 py-2.5 text-left font-medium text-muted">Date</th>
                     <th className="px-3 py-2.5 text-left font-medium text-muted">Fight</th>
                     <th className="px-3 py-2.5 text-left font-medium text-muted">Weight Class</th>
-                    {FIXTURE_BOOKMAKERS.slice(0, 5).map((b) => (
+                    {bookmakers.slice(0, 5).map((b) => (
                       <th key={b.id} className="px-3 py-2.5 text-center font-bold text-white">{b.name}</th>
                     ))}
                     <th className="px-3 py-2.5 text-center font-medium text-muted">Best</th>
@@ -136,14 +115,10 @@ export default function OddsCentrePage() {
                 </thead>
                 <tbody>
                   {upcomingFights.map((fight) => {
-                    const fightOdds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+                    const fightOdds = oddsMap[fight.id] ?? [];
                     return (
                       <tr key={fight.id} className="border-b border-border hover:bg-card-hover">
-                        <td className="px-3 py-2.5 text-muted">
-                          {FIXTURE_FIGHTS.find(f => f.eventId)
-                            ? "Sat 20 Apr"
-                            : "-"}
-                        </td>
+                        <td className="px-3 py-2.5 text-muted">—</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs">{getCountryFlag(fight.fighterA.countryCode)}</span>
@@ -153,7 +128,7 @@ export default function OddsCentrePage() {
                           </div>
                         </td>
                         <td className="px-3 py-2.5 text-muted">{fight.weightClass}</td>
-                        {FIXTURE_BOOKMAKERS.slice(0, 5).map((b) => {
+                        {bookmakers.slice(0, 5).map((b) => {
                           const o = fightOdds.find((fo) => fo.bookmaker.id === b.id);
                           return (
                             <td key={b.id} className="px-3 py-2.5 text-center font-medium text-white">
@@ -165,7 +140,7 @@ export default function OddsCentrePage() {
                           {fightOdds.length > 0 ? Math.min(...fightOdds.map(o => o.fighterAOdds)).toFixed(2) : "-"}
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className="text-xs font-bold text-fp-red">+26%</span>
+                          <span className="text-xs text-muted">—</span>
                         </td>
                       </tr>
                     );
@@ -185,11 +160,11 @@ export default function OddsCentrePage() {
           </Card>
 
           <Card title="Implied Probability" titleIcon={<BarChart3 className="h-4 w-4" />}>
-            {FIXTURE_FIGHTS.slice(1, 2).map((fight) => {
-              const odds = FIXTURE_ODDS.filter(o => o.fightId === fight.id);
-              if (odds.length === 0) return null;
-              const probA = impliedProbability(odds[0].fighterAOdds);
-              const probB = impliedProbability(odds[0].fighterBOdds);
+            {allFights.slice(1, 2).map((fight) => {
+              const fightOdds = oddsMap[fight.id] ?? [];
+              if (fightOdds.length === 0) return null;
+              const probA = impliedProbability(fightOdds[0].fighterAOdds);
+              const probB = impliedProbability(fightOdds[0].fighterBOdds);
               return (
                 <div key={fight.id} className="flex items-center justify-center gap-6">
                   <div className="text-center">

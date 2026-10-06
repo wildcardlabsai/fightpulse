@@ -1,19 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Users, Search, Filter } from "lucide-react";
+import { Users, Search } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_FIGHTERS } from "@/lib/data/fixtures";
+import { fighters as fightersService } from "@/lib/services/fighters";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fighter } from "@/lib/types";
 
 export default function FightersPage() {
   const [activeTab, setActiveTab] = useState("All Fighters");
   const [search, setSearch] = useState("");
-  const fighters = FIXTURE_FIGHTERS.filter(
+  const [allFighters, setAllFighters] = useState<Fighter[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const data = await fightersService.getAll();
+      setAllFighters(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const fighters = allFighters.filter(
     (f) => f.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero
+          title="Fighters"
+          subtitle="Complete fighter database with records, stats and intelligence."
+        />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -21,27 +46,27 @@ export default function FightersPage() {
         title="Fighters"
         subtitle="Complete fighter database with records, stats and intelligence."
         badges={[
-          { icon: <Users className="h-4 w-4" />, label: `${FIXTURE_FIGHTERS.length}`, sublabel: "Fighters" },
+          { icon: <Users className="h-4 w-4" />, label: `${allFighters.length}`, sublabel: "Fighters" },
         ]}
       />
 
       <div className="px-4 py-4 lg:px-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <TabBar
-            tabs={["All Fighters", "Active", "By Division", "By Nationality", "Rankings"]}
-            active={activeTab}
-            onChange={setActiveTab}
-          />
-          <div className="relative ml-auto">
+        <div className="space-y-3">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search fighters..."
-              className="h-9 w-60 rounded-md border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted focus:border-fp-red focus:outline-none"
+              className="h-9 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted focus:border-fp-red focus:outline-none sm:w-60"
             />
           </div>
+          <TabBar
+            tabs={["All Fighters", "Active", "By Division", "By Nationality", "Rankings"]}
+            active={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

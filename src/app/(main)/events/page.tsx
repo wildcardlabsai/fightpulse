@@ -1,14 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CalendarDays, MapPin, Tv } from "lucide-react";
 import PageHero from "@/components/shared/PageHero";
 import TabBar from "@/components/shared/TabBar";
-import { FIXTURE_EVENTS } from "@/lib/data/fixtures";
+import { events } from "@/lib/services/events";
+import type { Event } from "@/lib/types";
 
 export default function EventsPage() {
   const [activeTab, setActiveTab] = useState("Upcoming");
+  const [eventList, setEventList] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    events.getAll().then((data) => {
+      setEventList(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHero title="Events" subtitle="All major boxing events worldwide." />
+        <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -22,7 +41,7 @@ export default function EventsPage() {
         />
 
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FIXTURE_EVENTS.map((event) => (
+          {eventList.map((event) => (
             <Link
               key={event.id}
               href={`/events/${event.id}`}

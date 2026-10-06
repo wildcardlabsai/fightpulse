@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -17,25 +17,60 @@ import LiveBadge from "@/components/shared/LiveBadge";
 import TabBar from "@/components/shared/TabBar";
 import StatBar from "@/components/shared/StatBar";
 import OddsDisplay from "@/components/shared/OddsDisplay";
-import {
-  FIXTURE_FIGHTS,
-  FIXTURE_ROUND_STATS,
-  FIXTURE_MOMENTUM,
-  FIXTURE_ODDS,
-  FIXTURE_LIVE_FEED,
-  FIXTURE_SIGNALS,
-  FIXTURE_BOOKMAKERS,
-  getTotalStats,
-} from "@/lib/data/fixtures";
+import { fights } from "@/lib/services/fights";
+import { odds as oddsService } from "@/lib/services/odds";
+import { live } from "@/lib/services/live";
+import { getTotalStats } from "@/lib/data/fixtures";
 import { getCountryFlag } from "@/lib/utils";
+import type { Fight, RoundStats, MomentumSnapshot, OddsSnapshot, LiveFeedEntry, FightSignal } from "@/lib/types";
 
 export default function LiveFightPage() {
   const params = useParams();
-  const fight = FIXTURE_FIGHTS.find((f) => f.id === params.id) ?? FIXTURE_FIGHTS[0];
+  const [fight, setFight] = useState<Fight | null>(null);
+  const [roundStats, setRoundStats] = useState<RoundStats[]>([]);
+  const [momentum, setMomentum] = useState<MomentumSnapshot[]>([]);
+  const [odds, setOdds] = useState<OddsSnapshot[]>([]);
+  const [liveFeed, setLiveFeed] = useState<LiveFeedEntry[]>([]);
+  const [signals, setSignals] = useState<FightSignal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Live Stats");
-  const roundStats = FIXTURE_ROUND_STATS;
-  const momentum = FIXTURE_MOMENTUM;
-  const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+
+  useEffect(() => {
+    async function loadData() {
+      const fightId = params.id as string;
+      const [fightData, roundStatsData, momentumData, oddsData, feedData, signalsData] = await Promise.all([
+        fights.getById(fightId),
+        live.getRoundStats(fightId),
+        live.getMomentum(fightId),
+        oddsService.getForFight(fightId),
+        live.getFeed(fightId),
+        live.getSignals(fightId),
+      ]);
+
+      if (fightData) {
+        setFight(fightData);
+      } else {
+        // Fallback: get first live fight
+        const allLive = await fights.getLive();
+        if (allLive.length > 0) setFight(allLive[0]);
+      }
+
+      setRoundStats(roundStatsData);
+      setMomentum(momentumData);
+      setOdds(oddsData);
+      setLiveFeed(feedData);
+      setSignals(signalsData);
+      setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading || !fight) {
+    return (
+      <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+    );
+  }
+
   const totalStats = getTotalStats(roundStats);
   const latestMomentum = momentum[momentum.length - 1];
 
@@ -48,10 +83,7 @@ export default function LiveFightPage() {
         <span className="rounded bg-surface px-3 py-1 font-mono text-sm font-bold text-white">
           ROUND {fight.currentRound} OF {fight.scheduledRounds}
         </span>
-        <span className="font-mono text-lg font-bold text-fp-red">2:15</span>
-        <span className="ml-auto text-xs text-muted">
-          Prudential Center, Newark, USA
-        </span>
+        <span className="font-mono text-lg font-bold text-fp-red">LIVE</span>
       </div>
 
       {/* Fighter header */}
@@ -68,28 +100,30 @@ export default function LiveFightPage() {
             </div>
           </div>
 
-          <div className="hidden flex-col items-center gap-2 md:flex">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Fight Pulse Momentum</p>
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-black text-fp-red">{latestMomentum.fighterAMomentum}%</span>
-              <div className="h-4 w-48 overflow-hidden rounded-full bg-fp-blue/20">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-fp-red to-fp-red/80"
-                  animate={{ width: `${latestMomentum.fighterAMomentum}%` }}
-                  transition={{ duration: 0.8 }}
-                />
-              </div>
-              <span className="text-3xl font-black text-fp-blue">{latestMomentum.fighterBMomentum}%</span>
-            </div>
-            <div className="flex gap-4">
-              {odds.slice(0, 1).map(o => (
-                <div key={o.id} className="flex gap-4">
-                  <OddsDisplay odds={o.fighterAOdds} label="Favourite" movement={-0.08} />
-                  <OddsDisplay odds={o.fighterBOdds} label="Underdog" movement={0.62} />
+          {latestMomentum && (
+            <div className="hidden flex-col items-center gap-2 md:flex">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Fight Pulse Momentum</p>
+              <div className="flex items-center gap-4">
+                <span className="text-3xl font-black text-fp-red">{latestMomentum.fighterAMomentum}%</span>
+                <div className="h-4 w-48 overflow-hidden rounded-full bg-fp-blue/20">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-fp-red to-fp-red/80"
+                    animate={{ width: `${latestMomentum.fighterAMomentum}%` }}
+                    transition={{ duration: 0.8 }}
+                  />
                 </div>
-              ))}
+                <span className="text-3xl font-black text-fp-blue">{latestMomentum.fighterBMomentum}%</span>
+              </div>
+              <div className="flex gap-4">
+                {odds.slice(0, 1).map(o => (
+                  <div key={o.id} className="flex gap-4">
+                    <OddsDisplay odds={o.fighterAOdds} label="Favourite" />
+                    <OddsDisplay odds={o.fighterBOdds} label="Underdog" />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-row-reverse items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-fp-blue/30 bg-card text-2xl font-bold text-muted lg:h-28 lg:w-28">
@@ -102,6 +136,35 @@ export default function LiveFightPage() {
             </div>
           </div>
         </div>
+
+        {/* Mobile compact momentum */}
+        {latestMomentum && (
+          <div className="mt-4 md:hidden">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted">
+              <span className="text-fp-red">{latestMomentum.fighterAMomentum}%</span>
+              <span>Momentum</span>
+              <span className="text-fp-blue">{latestMomentum.fighterBMomentum}%</span>
+            </div>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fp-blue/30">
+              <motion.div
+                className="h-full rounded-full bg-fp-red"
+                animate={{ width: `${latestMomentum.fighterAMomentum}%` }}
+                transition={{ duration: 0.8 }}
+              />
+            </div>
+            {odds.length > 0 && (
+              <div className="mt-2 flex items-center justify-between">
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {odds[0].fighterAOdds.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-muted">Best Odds</span>
+                <span className="rounded bg-surface px-2 py-1 text-xs font-bold text-white">
+                  {odds[0].fighterBOdds.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tab bar */}
@@ -114,7 +177,7 @@ export default function LiveFightPage() {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:p-6">
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-12 lg:p-6">
         <div className="space-y-4 lg:col-span-4">
           <Card title="Live Fight Statistics" titleIcon={<BarChart3 className="h-4 w-4" />}>
             <div className="space-y-4">
@@ -174,36 +237,14 @@ export default function LiveFightPage() {
           </Card>
 
           <Card title="Judges Scorecard" titleIcon={<Shield className="h-4 w-4" />}>
-            <p className="text-center text-xs text-muted">(Unofficial)</p>
-            <div className="mt-2 overflow-hidden rounded-md border border-border">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-surface">
-                    <th className="px-2 py-2 text-left text-muted">Round</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 1</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 2</th>
-                    <th className="px-2 py-2 text-center text-muted">Judge 3</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4, 5, 6].map((round) => (
-                    <tr key={round} className="border-b border-border last:border-0">
-                      <td className="px-2 py-1.5 font-bold text-white">{round}</td>
-                      <td className="px-2 py-1.5 text-center text-muted">10 - 9</td>
-                      <td className="px-2 py-1.5 text-center text-muted">10 - 9</td>
-                      <td className="px-2 py-1.5 text-center text-muted">{round === 3 ? "9 - 10" : "10 - 9"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Scorecard data unavailable</p>
           </Card>
         </div>
 
         <div className="space-y-4 lg:col-span-4">
           <Card title="Live Feed" titleIcon={<MessageCircle className="h-4 w-4" />} liveBadge>
             <div className="space-y-3">
-              {FIXTURE_LIVE_FEED.map((entry) => (
+              {liveFeed.map((entry) => (
                 <div key={entry.id} className="flex gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
                   <div className="flex flex-col items-center gap-1">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-fp-red/20">
@@ -268,7 +309,7 @@ export default function LiveFightPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {FIXTURE_SIGNALS.map((signal, i) => (
+                  {signals.map((signal, i) => (
                     <tr key={i} className="border-b border-border last:border-0">
                       <td className="px-3 py-2 text-white">{signal.name}</td>
                       <td className="px-3 py-2 text-center">

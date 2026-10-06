@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { label: "Events", href: "/events", icon: CalendarDays },
   { label: "Odds Centre", href: "/odds", icon: BarChart3 },
   { label: "Intelligence", href: "/intelligence", icon: Brain },
-  { label: "Alerts", href: "/alerts", icon: Bell, badge: 3 },
+  { label: "Alerts", href: "/alerts", icon: Bell },
   { label: "Search", href: "/search", icon: Search },
 ];
 
@@ -69,11 +69,6 @@ export default function Sidebar() {
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
-                  {item.badge && (
-                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-fp-red text-[10px] font-bold text-white">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               </li>
             );

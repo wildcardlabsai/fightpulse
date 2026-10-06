@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Swords, BarChart3, TrendingUp, Clock, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -8,15 +8,51 @@ import Card from "@/components/shared/Card";
 import TabBar from "@/components/shared/TabBar";
 import StatBar from "@/components/shared/StatBar";
 import OddsDisplay from "@/components/shared/OddsDisplay";
-import { FIXTURE_FIGHTS, FIXTURE_ODDS, FIXTURE_EVENTS, FIXTURE_BOOKMAKERS } from "@/lib/data/fixtures";
+import { fights } from "@/lib/services/fights";
+import { odds as oddsService } from "@/lib/services/odds";
+import { events } from "@/lib/services/events";
 import { getCountryFlag, formatRecord } from "@/lib/utils";
+import type { Fight, OddsSnapshot, Event } from "@/lib/types";
 
 export default function FightDetailPage() {
   const params = useParams();
-  const fight = FIXTURE_FIGHTS.find((f) => f.id === params.id) ?? FIXTURE_FIGHTS[1];
-  const event = FIXTURE_EVENTS.find((e) => e.id === fight.eventId);
-  const odds = FIXTURE_ODDS.filter((o) => o.fightId === fight.id);
+  const [fight, setFight] = useState<Fight | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [odds, setOdds] = useState<OddsSnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+
+  useEffect(() => {
+    async function loadData() {
+      const fightId = params.id as string;
+      let fightData = await fights.getById(fightId);
+
+      if (!fightData) {
+        // Fallback: get second fight from all fights
+        const allFights = await fights.getAll();
+        fightData = allFights[1] ?? allFights[0] ?? null;
+      }
+
+      if (fightData) {
+        setFight(fightData);
+        const [oddsData, eventData] = await Promise.all([
+          oddsService.getForFight(fightData.id),
+          fightData.eventId ? events.getById(fightData.eventId) : Promise.resolve(null),
+        ]);
+        setOdds(oddsData);
+        setEvent(eventData);
+      }
+
+      setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading || !fight) {
+    return (
+      <div className="flex items-center justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-fp-red" /></div>
+    );
+  }
 
   return (
     <div>
@@ -77,6 +113,20 @@ export default function FightDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Mobile odds */}
+        {odds.length > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-4 md:hidden">
+            <div className="rounded border border-border bg-surface px-4 py-2 text-center">
+              <span className="text-lg font-bold text-white">{odds[0].fighterAOdds.toFixed(2)}</span>
+              <p className="text-[10px] text-muted">Favourite</p>
+            </div>
+            <div className="rounded border border-border bg-surface px-4 py-2 text-center">
+              <span className="text-lg font-bold text-white">{odds[0].fighterBOdds.toFixed(2)}</span>
+              <p className="text-[10px] text-muted">Underdog</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -93,9 +143,9 @@ export default function FightDetailPage() {
           <Card title="Tale of the Tape" titleIcon={<Swords className="h-4 w-4" />}>
             <div className="space-y-3">
               {[
-                ["Age", "25", "25"],
-                ["Height", fight.fighterA.height ?? "-", fight.fighterB.height ?? "-"],
-                ["Reach", fight.fighterA.reach ?? "-", fight.fighterB.reach ?? "-"],
+                ["Age", "—", "—"],
+                ["Height", fight.fighterA.height ?? "—", fight.fighterB.height ?? "—"],
+                ["Reach", fight.fighterA.reach ?? "—", fight.fighterB.reach ?? "—"],
                 ["Stance", fight.fighterA.stance, fight.fighterB.stance],
                 ["Division", fight.fighterA.division, fight.fighterB.division],
                 ["Rounds", String(fight.scheduledRounds), String(fight.scheduledRounds)],
@@ -110,30 +160,7 @@ export default function FightDetailPage() {
           </Card>
 
           <Card title="Recent Form" titleIcon={<TrendingUp className="h-4 w-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="mb-2 text-[10px] font-bold uppercase text-muted">Last 5 Fights - {fight.fighterA.name.split(" ").pop()}</p>
-                <div className="space-y-1">
-                  {["W", "W", "L", "W", "W"].map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px]">
-                      <span className={`flex h-4 w-4 items-center justify-center rounded text-[8px] font-bold text-white ${r === "W" ? "bg-success" : "bg-fp-red"}`}>{r}</span>
-                      <span className="text-muted">vs Opponent</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-bold uppercase text-muted">Last 5 Fights - {fight.fighterB.name.split(" ").pop()}</p>
-                <div className="space-y-1">
-                  {["W", "W", "W", "W", "W"].map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px]">
-                      <span className="flex h-4 w-4 items-center justify-center rounded bg-success text-[8px] font-bold text-white">{r}</span>
-                      <span className="text-muted">vs Opponent</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <p className="py-4 text-center text-xs text-muted">Fight history data unavailable</p>
           </Card>
         </div>
 
